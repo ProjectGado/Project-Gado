@@ -13,7 +13,17 @@ A few definitions:
    of artifacts are loaded into the 'in' tray, they are all
    considered to be a part of the same 'artifact set'
 '''
+from gado.GadoGui import *
+from Tkinter import *
 
 if __name__ == '__main__':
     print "Gado Robot Management Interface"
     # This is where we run Gado from!
+    
+    root = Tk()
+    root.title("Gado Robot Management Interface")
+    
+    gui = GadoGui(master=root)
+    gui.mainloop()
+    
+    root.destroy()
