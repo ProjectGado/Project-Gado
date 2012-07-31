@@ -269,11 +269,14 @@ class GadoGui(Frame):
         #Function call to start robot's operation
         print "Starting robot..."
         
-        self.gado.goHome()
+        #self.gado.lowerAndLiftInternal()
+        #self.gado.sendRawActuatorWithoutBlocking(200)
+        self.gado.moveActuator(70)
         
     def pauseRobot(self):
         #Function call to pause robot's operation
         print "Pausing robot..."
+        self.gado.moveArm(50)
         
     def stopRobot(self):
         #Function call to stop robot's operation
@@ -282,4 +285,6 @@ class GadoGui(Frame):
     def resetRobot(self):
         #Function call to reset the robot's operations
         print "Restarting robot..."
+        
+        #self.gado.goHome()
         

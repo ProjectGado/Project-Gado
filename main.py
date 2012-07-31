@@ -31,7 +31,9 @@ if __name__ == '__main__':
     globals()['db'] = db
     
     #Create instance of robot
-    gado = None#Robot('COM7')
+    gado = Robot('COM7')
+    gado.moveActuator(50)
+    #gado.goHome()
     
     root = Tk()
     root.title("Gado Robot Management Interface")
