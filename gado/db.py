@@ -31,8 +31,7 @@ class DBFactory():
         # ex: a folder of images to be scanned
         db.define_table('artifact_sets',
             Field('name', 'string'),
-            Field('parent', 'reference artifact_sets')
-            )
+            Field('parent', 'reference artifact_sets'))
         
         # An artifact is an individual image in the Gado's queue
         # artifact name is a concatenation of set.name and set_incrementor
@@ -58,5 +57,43 @@ class DBFactory():
 class DBInterface():
     def __init__(self, db):
         self.db = db
+        self.delim = '  '
     
+    def add_artifact_set(self, name, parent):
+        pass
     
+    def delete_artifact_set(self, name):
+        pass
+    
+    def _get_children(self, parent):
+        db = self.db
+        children_rows = db(db.artifact_sets.parent == parent).select()
+        children_final = []
+        for child in children_rows:
+            print "iterating on %s with parent %s!" % (child['name'], child['parent'])
+            child_dict = dict(name = child['name'],
+                              id = child['id'],
+                              children = self._get_children(child['id']))
+            children_final.append(child_dict)
+        return children_final
+    
+    def artifact_set_list(self):
+        set_list = self._get_children(None)
+        final_set_list = self._build_tuple_list(set_list)
+        final_set_list.insert(0,(None,'No parent'))
+        return final_set_list
+    
+    def _build_tuple_list(self, set_list, depth=0):
+        current_list = []
+        for artifact_set in set_list:
+            indent = self.delim * depth
+            indented_name = '%s%s' % (indent, artifact_set['name'])
+            line_item = (artifact_set['id'], indented_name)
+            current_list.append(line_item)
+            children_list = self._build_tuple_list(artifact_set['children'], depth+1)
+            current_list.extend(children_list)
+        return current_list
+    
+    def add_artifact_set(self, name, parent):
+        self.db.artifact_sets.insert(name=name, parent=parent)
+        self.db.commit()

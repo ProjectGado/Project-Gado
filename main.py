@@ -13,32 +13,28 @@ A few definitions:
    of artifacts are loaded into the 'in' tray, they are all
    considered to be a part of the same 'artifact set'
 '''
-from gado.GadoGui import *
-from Tkinter import *
-from gado.Robot import *
+from gado.functions import import_settings
+from gado.GadoGui import GadoGui
+from gado.Robot import Robot
+from gado.db import DBFactory, DBInterface
+from Tkinter import Tk
 
 if __name__ == '__main__':
-    print "Gado Robot Management Interface"
-    # This is where we run Gado from!
+    print "Initializing Gado Robot Management Interface"
     
-    #Import current gado settings
+    # Import current gado settings
     settings = import_settings()
     
-    #Get access to the DB
+    # Get access to the DB
     db = DBFactory(**settings).get_db()
-    
-    #Place db in globals
-    globals()['db'] = db
+    db_interface = DBInterface(db)
     
     #Create instance of robot
-    gado = Robot('COM7')
-    gado.moveActuator(50)
-    #gado.goHome()
+    #gado = Robot('COM7')
     
-    root = Tk()
-    root.title("Gado Robot Management Interface")
-    
-    gui = GadoGui(master=root, db=db, gado=gado)
+    # Get the window stuff up and running
+    tk = Tk()
+    gui = GadoGui(db=db, db_interface=db_interface, root = tk)
     gui.mainloop()
     
-    root.destroy()
+    tk.destroy()
