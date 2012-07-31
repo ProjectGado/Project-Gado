@@ -20,3 +20,15 @@ class Robot(object):
         
     def moveActuator(self, stroke):
         self.serialConnection.write("%s%s" % (stroke, self.MOVE_ACTUATOR))
+    
+    def start(self):
+        self.moveActuator(70)
+    
+    def pause(self):
+        pass
+    
+    def stop(self):
+        pass
+    
+    def reset(self):
+        pass

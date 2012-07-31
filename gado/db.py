@@ -54,3 +54,9 @@ class DBFactory():
             Field('name', 'string'))
         
         return db
+
+class DBInterface():
+    def __init__(self, db):
+        self.db = db
+    
+    
