@@ -30,7 +30,9 @@ class DBFactory():
         # An artifact set is a specific set of artifacts
         # ex: a folder of images to be scanned
         db.define_table('artifact_sets',
-            Field('name', 'string'))
+            Field('name', 'string'),
+            Field('parent', 'reference artifact_sets')
+            )
         
         # An artifact is an individual image in the Gado's queue
         # artifact name is a concatenation of set.name and set_incrementor

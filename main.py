@@ -15,15 +15,28 @@ A few definitions:
 '''
 from gado.GadoGui import *
 from Tkinter import *
+from gado.Robot import *
 
 if __name__ == '__main__':
     print "Gado Robot Management Interface"
     # This is where we run Gado from!
     
+    #Import current gado settings
+    settings = import_settings()
+    
+    #Get access to the DB
+    db = DBFactory(**settings).get_db()
+    
+    #Place db in globals
+    globals()['db'] = db
+    
+    #Create instance of robot
+    gado = None#Robot('COM7')
+    
     root = Tk()
     root.title("Gado Robot Management Interface")
     
-    gui = GadoGui(master=root)
+    gui = GadoGui(master=root, db=db, gado=gado)
     gui.mainloop()
     
     root.destroy()

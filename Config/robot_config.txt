@@ -1,0 +1,11 @@
+{
+"robot_props" :
+	{
+	"arm_home_pos" : "20",
+	"actuator_home_pos" : "25",
+	"arm_first_limit_pos" : "0",
+	"arm_second_limit_pos" : "180",
+	"arm_traverse_time" : "6.13",
+	"arm_traverse_degrees" : "180"	
+	}
+}

@@ -13,7 +13,7 @@ CHECK OUT gado/functions.py FOR REAL CODE
 def add_records():
     # add a couple entries to the db to see if the db works
     db.artifact_sets.insert(name='first set')
-    db.artifact_sets.insert(name='second set')
+    db.artifact_sets.insert(name='second set', parent = db(db.artifact_sets.name=='first set').select(db.artifact_sets.ALL).first()['id'])
     db.artifact_sets.insert(name='third set')
     db.commit()
     
