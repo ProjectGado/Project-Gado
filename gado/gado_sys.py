@@ -1,6 +1,6 @@
 from gado.Robot import Robot
-import thread
 from threading import Thread
+import subprocess, re
 
 class WebcamThread(Thread):
     def __init__(self):
@@ -10,7 +10,10 @@ class WebcamThread(Thread):
         '''
         Takes a picture of the back of the image
         '''
-        pass
+        self.image = 'output.png'
+    
+    def get_image(self):
+        return self.image
 
 class ScannerThread(Thread):
     def __init__(self, funct):
@@ -45,6 +48,8 @@ class RobotThread(Thread):
     def reset():
         self.robot.reset()
     
+    def in_pile():
+        self.robot.in_pile()
     
 
 class GadoSystem():
@@ -52,22 +57,40 @@ class GadoSystem():
         self.robot = robot
         self.dbi = dbi
     
+    def _intialize(self):
+        self.sthread = ScannerThread('initialize')
+        self.scanner_initializing = True
+        self.sthread.start()
+        self.robot.reset()
+        
+    def _prep_next(self):
+        # Warmup!
+        self.wthread = WebcamThread()
+        self.wthread.start()
+        self.robot.in_pile()
+    
     def start(self):
         # Sanity check
         if not self.robot.connected():
             raise Exception("No robot connected")
         
-        # Warmup!
-        rthread = RobotThread('')
-        self.robot.reset()
-        self._initialize_scanner()
+        # Warm things up!
+        self._initialize()
         
-        #
-        image = self._capture_webcam()
-        while not (_check_barcode(image)):
+        image = self._prep_next()
+        while not (self._check_barcode(image)):
             
+            # Grab the image
+            # Move the image to the scanner
             
-            pass
+            # Is the scanner ready?
+            # Scan
+            
+            # THREADED
+            # Pick the image up and move to out pile
+            # Retrieve the scanned image
+            
+            self._prep_next()
         
         pass
     
@@ -90,7 +113,9 @@ class GadoSystem():
         return False
     
     def disconnect(self):
-        pass
+        '''
+        I'm not sure why we would want to disconnect the robot
+        '''
         return True
     
     def _capture_webcam(self):
@@ -105,9 +130,6 @@ class GadoSystem():
         Checks for a barcode within image
         '''
         return True
-    
-    def _initialize_scanner(self):
-        pass
     
     def _scan_image(self):
         '''

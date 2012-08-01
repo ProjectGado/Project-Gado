@@ -2,12 +2,7 @@ import sys
 from Tkinter import *
 import tkMessageBox
 import Pmw
-import os.path
-import serial
-import re
-import subprocess
 from gado.Robot import Robot
-from gado.functions import *
 
 class GadoGui(Frame):
     
@@ -22,10 +17,6 @@ class GadoGui(Frame):
     
     #Robot object
     global gado
-    global settings
-    
-    #Serial object
-    global serialConnection
     
     def __init__(self, root, db_interface, gado_system):
         # Create the root frame
@@ -36,9 +27,6 @@ class GadoGui(Frame):
         
         # The Gado ecosystem manager
         self.gado_sys = gado_system
-        
-        #Init the serial object
-        self.serialConnection = serial.Serial()
         
         #Store the database connection as a global
         self.dbi = db_interface
