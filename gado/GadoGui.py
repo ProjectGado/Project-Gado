@@ -44,12 +44,15 @@ class GadoGui(Frame):
         #Init the serial object
         self.serialConnection = serial.Serial()
         
+        #Try to autoconnect to the robot
+        self.autoConnectRobot()
+        
         #Store the database connection as a global
         self.db = db
         self.dbi = db_interface
         
         #Store the robot object as a global
-        self.gado = gado
+        #self.gado = gado
         
         #Create all menus for application
         self.createMenus(self.root)
@@ -301,6 +304,33 @@ class GadoGui(Frame):
     #####                           FUNCTION WRAPPERS                           #####
     #################################################################################
 
+    #Query the current system for all available serial ports
+    #Try to to connect to each port and "shake hands" with the robot
+    #If it is in fact the robot, the handshake will match the expected value
+    #in the settings file
+    def autoConnectRobot(self):
+        
+        #Collect all ports available
+        ports = self.listCommPorts()
+        
+        #Test each one until we find the Gado (or we don't)
+        for port in ports:
+            #Try these settings
+            self.serialConnection.baudrate = self.settings['baudrate']
+            self.serialConnection.port = port
+            
+            #Try and connect to this serial port
+            try:
+                self.serialConnection.open()
+                
+                #create a connection to the robot so we can try to shake hands
+                gado = Robot(self.serialConnection, self.settings)
+                
+                if self.serialConnection.isOpen() and gado.handshake() == self.settings['handshake']:
+                    print "Found the gado! at port: %s with handshake: %s" % (port, gado.handshake())
+            except:
+                print "No luck with port: %s" % (port)
+            
     def listCommPorts(self):
         
         #Query the comm ports available on the system
@@ -315,7 +345,7 @@ class GadoGui(Frame):
         if self.commPortDropDown.get() != None:
             
             #Apply settings
-            self.serialConnection.baudrate = 115200
+            self.serialConnection.baudrate = self.settings['baudrate']
             self.serialConnection.port = self.commPortDropDown.get()
             
             #Open the connection

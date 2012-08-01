@@ -22,6 +22,9 @@ class Robot(object):
         if serialConnection.isOpen():
             self.serialConnection = serialConnection
         
+    def handshake(self):
+        return "I'm not the handshake..."#self.settings['handshake']
+        
     #Move the robot's arm to the specified degree (between 0-180)
     def moveArm(self, degree):
         self.serialConnection.write("%s%s" % (degree, self.MOVE_ARM))

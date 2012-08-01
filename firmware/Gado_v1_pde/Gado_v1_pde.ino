@@ -39,6 +39,7 @@ int actuator_position_pin = 2;
 int arm_servo_pin = 5;
 
 #define buttonPin A1
+const String handshake = "I'm a robot!";
 
 void setup() 
 { 
@@ -101,9 +102,13 @@ void loop()
         printLightVsPositionData();
         break;
       case 'l':
-        lowerAndLift();      
+        lowerAndLift();
+        break;
+      case 'h':
+        Serial.print(handshake);  
+        break;    
     }
-    if (ch != 'd' && ch != '0' && ch != '1' && ch != '2' && ch != '3' && ch != '4' && ch != '5' && ch != '6' && ch != '7' && ch != '8' && ch != '9' && ch != '\n' && ch != '\r') {
+    if (ch != 'h' && ch != 'd' && ch != '0' && ch != '1' && ch != '2' && ch != '3' && ch != '4' && ch != '5' && ch != '6' && ch != '7' && ch != '8' && ch != '9' && ch != '\n' && ch != '\r') {
         gatherAndEcho();
     }
     }
