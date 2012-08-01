@@ -12,12 +12,15 @@ class Robot(object):
     MOVE_VACUUM = 'v'
     LOWER_AND_LIFT = 'l'
     
-    def __init__(self, commPort, settings):
+    def __init__(self, serialConnection, settings):
         #Grab settings
         self.settings = settings
         
         #Initialize the serial connection to the robot
-        self.serialConnection = serial.Serial(commPort, self.settings['baudrate'])
+        #self.serialConnection = serial.Serial(commPort, self.settings['baudrate'])
+        #Check to make sure passed serial connection is actively open
+        if serialConnection.isOpen():
+            self.serialConnection = serialConnection
         
     #Move the robot's arm to the specified degree (between 0-180)
     def moveArm(self, degree):
@@ -82,3 +85,6 @@ class Robot(object):
     def reset(self):
         self.resetArm()
         self.resetActuator()
+        
+    def listCommPorts(self):
+        return self.serialConnection.tools.list_ports()

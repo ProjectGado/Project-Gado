@@ -34,7 +34,7 @@ if __name__ == '__main__':
     
     # Get the window stuff up and running
     tk = Tk()
-    gui = GadoGui(db=db, db_interface=db_interface, root = tk)
+    gui = GadoGui(db=db, db_interface=db_interface, settings = settings, root = tk)
     gui.mainloop()
     
     tk.destroy()

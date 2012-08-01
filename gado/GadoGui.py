@@ -3,7 +3,10 @@ from Tkinter import *
 import tkMessageBox
 import Pmw
 import os.path
+import serial
 import re
+import subprocess
+from gado.Robot import Robot
 from gado.functions import *
 
 class GadoGui(Frame):
@@ -13,13 +16,18 @@ class GadoGui(Frame):
     global artifactSetWindow
     global artifactSets
     global nameEntry
+    global commPortDropDown
     
     global currentParent
     
     #Robot object
     global gado
+    global settings
     
-    def __init__(self, db=None, db_interface=None, gado=None, root=None):
+    #Serial object
+    global serialConnection
+    
+    def __init__(self, db=None, db_interface=None, gado=None, root=None, settings=None):
         # Create the root frame
         if not root:
             self.root = Tk()
@@ -29,6 +37,12 @@ class GadoGui(Frame):
         
         #Initialize the master frame
         Frame.__init__(self, self.root)
+        
+        #Store the settings (if any)
+        self.settings = settings
+        
+        #Init the serial object
+        self.serialConnection = serial.Serial()
         
         #Store the database connection as a global
         self.db = db
@@ -96,6 +110,8 @@ class GadoGui(Frame):
     #################################################################################
     
     def createWidgets(self):
+        #Create the connection control widgets
+        self.createConnectionControlWidgets()
         
         #Create the artifactSet section
         self.createArtifactSetWidgets()
@@ -106,15 +122,47 @@ class GadoGui(Frame):
         #Create the status center
         self.createStatusWidgets()
         
+    def createConnectionControlWidgets(self):
+        #Create the label
+        self.connectionLabel = Label(self)
+        self.connectionLabel["text"] = "Connection Control: "
+        self.connectionLabel.grid(row=0, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        
+        #Comm port selection lab3l
+        self.commSelectLabel = Label(self)
+        self.commSelectLabel["text"] = "Select a Comm Port: "
+        self.commSelectLabel.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        
+        #Comm port selection dropdown
+        self.commPortDropDown = Pmw.ComboBox(self)
+        self.commPortDropDown.grid(row=1, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        
+        #Add in the actual available comm ports
+        ports = self.listCommPorts()
+        
+        for port in ports:
+            self.commPortDropDown.insert(END, port)
+            
+        #Create the buttons to connect and disconnect the robot
+        self.connectButton = Button(self)
+        self.connectButton["text"] = "Connect to Robot"
+        self.connectButton["command"] = self.connectToRobot
+        self.connectButton.grid(row=2, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        
+        self.disconnectButton = Button(self)
+        self.disconnectButton["text"] = "Disconnect from Robot"
+        self.disconnectButton["command"] = self.disconnectFromRobot
+        self.disconnectButton.grid(row=2, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        
     def createArtifactSetWidgets(self):
         #Create label
         self.artifactSetLabel = Label(self)
         self.artifactSetLabel["text"] = "ArtifactSet: "
-        self.artifactSetLabel.grid(row=0, column=0, sticky=W, padx=10, pady=5)
+        self.artifactSetLabel.grid(row=3, column=0, sticky=W, padx=10, pady=5)
         
         #Create dropdown for artifactSet selection
         self.artifactSetDropDown = Pmw.ComboBox(self)
-        self.artifactSetDropDown.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        self.artifactSetDropDown.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         
         #Add entries to that dropdown
         
@@ -128,44 +176,44 @@ class GadoGui(Frame):
         self.addArtifactSetButton = Button(self)
         self.addArtifactSetButton["text"] = "New Artifact Set"
         self.addArtifactSetButton["command"] = self.addArtifactSet
-        self.addArtifactSetButton.grid(row=1, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        self.addArtifactSetButton.grid(row=4, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         
     def createControlWidgets(self):
         #Create label
         self.controlLabel = Label(self)
         self.controlLabel["text"] = "Control: "
-        self.controlLabel.grid(row=2, column=0, sticky=W, padx=10, pady=5)
+        self.controlLabel.grid(row=5, column=0, sticky=W, padx=10, pady=5)
         
         #Create start/stop/pause/restart buttons
         self.startButton = Button(self)
         self.startButton["text"] = "Start"
         self.startButton["command"] = self.startRobot
-        self.startButton.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        self.startButton.grid(row=6, column=0, sticky=N+S+E+W, padx=10, pady=5)
         
         self.pauseButton = Button(self)
         self.pauseButton["text"] = "Pause"
         self.pauseButton["command"] = self.pauseRobot
-        self.pauseButton.grid(row=3, column=1, sticky=N+S+E+W, padx=10, pady=5)
+        self.pauseButton.grid(row=6, column=1, sticky=N+S+E+W, padx=10, pady=5)
         
         self.stopButton = Button(self)
         self.stopButton["text"] = "Stop"
         self.stopButton["command"] = self.stopRobot
-        self.stopButton.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5)
+        self.stopButton.grid(row=6, column=2, sticky=N+S+E+W, padx=10, pady=5)
         
         self.resetButton = Button(self)
         self.resetButton["text"] = "Reset"
         self.resetButton["command"] = self.resetRobot
-        self.resetButton.grid(row=3, column=3, sticky=N+S+E+W, padx=10, pady=5)
+        self.resetButton.grid(row=6, column=3, sticky=N+S+E+W, padx=10, pady=5)
         
     def createStatusWidgets(self):
         #Create label
         self.statusLabel = Label(self)
         self.statusLabel["text"] = "Status: "
-        self.statusLabel.grid(row=5, column=0, sticky=W, padx=10, pady=5)
+        self.statusLabel.grid(row=8, column=0, sticky=W, padx=10, pady=5)
         
         #Actual message box
         self.messageEntry = Entry(self)
-        self.messageEntry.grid(row=6, column=0, columnspan=4, sticky=N+S+E+W, padx=10, pady=5)
+        self.messageEntry.grid(row=9, column=0, columnspan=4, sticky=N+S+E+W, padx=10, pady=5)
     
     def createTopLevelWidgets(self):
         self.artifactSetWindow.title("Manage Artifact Sets")
@@ -253,6 +301,51 @@ class GadoGui(Frame):
     #####                           FUNCTION WRAPPERS                           #####
     #################################################################################
 
+    def listCommPorts(self):
+        
+        #Query the comm ports available on the system
+        rawPortList = str(subprocess.check_output(["python", "-m", "serial.tools.list_ports"]))
+        ports = re.findall('(COM\d+)', rawPortList)
+        
+        #Return a list of those ports
+        return ports
+    
+    def connectToRobot(self):
+        #Check to see if a comm port is selected
+        if self.commPortDropDown.get() != None:
+            
+            #Apply settings
+            self.serialConnection.baudrate = 115200
+            self.serialConnection.port = self.commPortDropDown.get()
+            
+            #Open the connection
+            try:
+                self.serialConnection.open()
+            except:
+                tkMessageBox.showerror("Connection Status", "Failed with message: %s" % (sys.exc_info()[1]))
+                return False
+            
+            #check to make sure it was a success
+            if self.serialConnection.isOpen():
+                
+                #Connect to actual robot
+                self.gado = Robot(self.serialConnection, self.settings)
+                tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
+                
+                return True
+        else:
+            tkMessageBox.showerror("Connection Status", "Could not connect to comm port: %s" % (self.commPortDropDown.get()))
+            return False
+    
+    def disconnectFromRobot(self):
+        #Check to see if port is already open
+        if self.serialConnection.isOpen():
+            self.serialConnection.close()
+            
+            tkMessageBox.showinfo("Connection Status", "Closed connection to Gado!")
+        else:
+            tkMessageBox.showerror("Connection Status", "No open connection found!")
+    
     def startRobot(self):
         #Function call to start robot's operation
         print "Starting robot..."
