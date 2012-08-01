@@ -16,6 +16,7 @@ A few definitions:
 from gado.functions import import_settings
 from gado.GadoGui import GadoGui
 from gado.Robot import Robot
+from gado.gado_sys import GadoSystem
 from gado.db import DBFactory, DBInterface
 from Tkinter import Tk
 
@@ -31,10 +32,13 @@ if __name__ == '__main__':
     
     #Create instance of robot
     #gado = Robot('COM7')
+    gado = Robot(**settings)
+    
+    gado_sys = GadoSystem(db_interface, gado)
     
     # Get the window stuff up and running
     tk = Tk()
-    gui = GadoGui(db=db, db_interface=db_interface, settings = settings, root = tk)
+    gui = GadoGui(tk, db_interface, gado_sys)
     gui.mainloop()
     
     tk.destroy()

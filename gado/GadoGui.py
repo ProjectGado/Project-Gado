@@ -27,29 +27,21 @@ class GadoGui(Frame):
     #Serial object
     global serialConnection
     
-    def __init__(self, db=None, db_interface=None, gado=None, root=None, settings=None):
+    def __init__(self, root, db_interface, gado_system):
         # Create the root frame
-        if not root:
-            self.root = Tk()
-            self.root.title("Gado Robot Management Interface")
-        else:
-            self.root = root
+        self.root = root
         
         #Initialize the master frame
         Frame.__init__(self, self.root)
         
-        #Store the settings (if any)
-        self.settings = settings
+        # The Gado ecosystem manager
+        self.gado_sys = gado_system
         
         #Init the serial object
         self.serialConnection = serial.Serial()
         
         #Store the database connection as a global
-        self.db = db
         self.dbi = db_interface
-        
-        #Store the robot object as a global
-        self.gado = gado
         
         #Create all menus for application
         self.createMenus(self.root)
@@ -138,7 +130,7 @@ class GadoGui(Frame):
         self.commPortDropDown.grid(row=1, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         
         #Add in the actual available comm ports
-        ports = self.listCommPorts()
+        ports = ['a', 'b']
         
         for port in ports:
             self.commPortDropDown.insert(END, port)
@@ -262,14 +254,6 @@ class GadoGui(Frame):
         self.currentParent = self.artifact_sets[int(idx)][0]
         print "Have %s selected" % (self.currentParent)
             
-    def calculateChildLevel(self, artifactSetId):
-        sets = self.db(self.db.artifact_sets.id == artifactSetId).select()
-        for s in sets:
-            if(s['parent'] != None):
-                return self.calculateChildLevel(s['parent']) + 1
-            else:
-                return 0
-            
     def buildArtifactSetList(self):
         #Clear current list
         self.artifactSets.delete(0, 'end')
@@ -300,51 +284,21 @@ class GadoGui(Frame):
     #################################################################################
     #####                           FUNCTION WRAPPERS                           #####
     #################################################################################
-
-    def listCommPorts(self):
-        
-        #Query the comm ports available on the system
-        rawPortList = str(subprocess.check_output(["python", "-m", "serial.tools.list_ports"]))
-        ports = re.findall('(COM\d+)', rawPortList)
-        
-        #Return a list of those ports
-        return ports
     
     def connectToRobot(self):
-        #Check to see if a comm port is selected
-        if self.commPortDropDown.get() != None:
-            
-            #Apply settings
-            self.serialConnection.baudrate = 115200
-            self.serialConnection.port = self.commPortDropDown.get()
-            
-            #Open the connection
-            try:
-                self.serialConnection.open()
-            except:
-                tkMessageBox.showerror("Connection Status", "Failed with message: %s" % (sys.exc_info()[1]))
-                return False
-            
-            #check to make sure it was a success
-            if self.serialConnection.isOpen():
-                
-                #Connect to actual robot
-                self.gado = Robot(self.serialConnection, self.settings)
-                tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
-                
-                return True
+        success = self.gado_sys.connect()
+        if success:
+            tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
         else:
-            tkMessageBox.showerror("Connection Status", "Could not connect to comm port: %s" % (self.commPortDropDown.get()))
-            return False
+            tkMessageBox.showerror("Connection Status", "Could not connect to Gado, please ensure it is on and plugged into the computer")
+        return success
     
     def disconnectFromRobot(self):
-        #Check to see if port is already open
-        if self.serialConnection.isOpen():
-            self.serialConnection.close()
-            
+        success = self.gado_sys.disconnect()
+        if success:
             tkMessageBox.showinfo("Connection Status", "Closed connection to Gado!")
         else:
-            tkMessageBox.showerror("Connection Status", "No open connection found!")
+            tkMessageBox.showerror("Connection Status", "Error closing connection, was it connected?")
     
     def startRobot(self):
         #Function call to start robot's operation
@@ -352,19 +306,22 @@ class GadoGui(Frame):
         
         #self.gado.lowerAndLiftInternal()
         #self.gado.sendRawActuatorWithoutBlocking(200)
-        self.gado.start()
+        self.gado_sys.start()
         
     def pauseRobot(self):
         #Function call to pause robot's operation
         print "Pausing robot..."
-        self.gado.pause()
-        
+        self.gado_sys.pause()
+    
+    def resumeRobot(self):
+        self.gado_sys.resume()
+    
     def stopRobot(self):
         #Function call to stop robot's operation
         print "Stopping robot..."
-        self.gado.stop()
+        self.gado_sys.stop()
         
     def resetRobot(self):
         #Function call to reset the robot's operations
         print "Restarting robot..."
-        self.gado.reset()
+        self.gado_sys.reset()
