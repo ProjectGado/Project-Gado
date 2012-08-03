@@ -1,13 +1,18 @@
 import sys
 from Tkinter import *
 import tkMessageBox
+import ttk
+from gado.ProgressMeter import *
 import Pmw
 import os.path
 import serial
 import re
 import subprocess
+import time
+import platform
 from gado.Robot import Robot
 from gado.functions import *
+import TestTopLevel
 
 class GadoGui(Frame):
     
@@ -17,6 +22,7 @@ class GadoGui(Frame):
     global artifactSets
     global nameEntry
     global commPortDropDown
+    global configDialog
     
     global currentParent
     
@@ -27,32 +33,35 @@ class GadoGui(Frame):
     #Serial object
     global serialConnection
     
-    def __init__(self, db=None, db_interface=None, gado=None, root=None, settings=None):
-        # Create the root frame
-        if not root:
-            self.root = Tk()
-            self.root.title("Gado Robot Management Interface")
+    #Time objects for setup MOVE IT ALL TO ITS OWN CLASS
+    
+    global _lastTime
+    global _currentTime
+    
+    def _demo(meter, value):
+        meter.set(value)
+        if value < 1.0:
+            value = value + 0.005
+            meter.after(50, lambda: _demo(meter, value))
         else:
-            self.root = root
+            meter.set(value, 'Demo successfully finished')
+    
+    def __init__(self, root, db_interface, gado_system):
+        # Create the root frame
+        self.root = root
         
         #Initialize the master frame
         Frame.__init__(self, self.root)
         
-        #Store the settings (if any)
-        self.settings = settings
+        # The Gado ecosystem manager
+        self.gado_sys = gado_system
         
-        #Init the serial object
-        self.serialConnection = serial.Serial()
-        
-        #Try to autoconnect to the robot
-        self.autoConnectRobot()
+        #Init the time
+        self._lastTime = 0
+        self._currentTime = 0
         
         #Store the database connection as a global
-        self.db = db
         self.dbi = db_interface
-        
-        #Store the robot object as a global
-        #self.gado = gado
         
         #Create all menus for application
         self.createMenus(self.root)
@@ -64,6 +73,20 @@ class GadoGui(Frame):
         
         self.artifactSetWindow.protocol("WM_DELETE_WINDOW", self.artifactSetWindow.withdraw)
         self.artifactSetWindow.withdraw()
+        
+        #configure the layout of the gado setup
+        self.configurationWindow = Toplevel(self)
+        
+        #create the config dialog toplevel object
+        self.configDialog = Toplevel(self)
+        
+        self.configDialog.protocol("WM_DELETE_WINDOW", self.configDialog.withdraw)
+        self.configDialog.withdraw()
+        
+        self.createConfigurationWindowWidgets()
+        
+        self.configurationWindow.protocol("WM_DELETE_WINDOW", self.configurationWindow.withdraw)
+        self.configurationWindow.withdraw()
         
         #Init current selected parent to None
         self.currentParent = None
@@ -104,7 +127,7 @@ class GadoGui(Frame):
     def createSettingsMenu(self, menubar=None, master=None):
         
         self.settingsMenu = Menu(self.menubar, tearoff=0)
-        self.settingsMenu.add_command(label="Quit", command=master.quit)
+        self.settingsMenu.add_command(label="Configure Layout", command=self.configureLayout)
         
         return self.settingsMenu
         
@@ -141,7 +164,7 @@ class GadoGui(Frame):
         self.commPortDropDown.grid(row=1, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         
         #Add in the actual available comm ports
-        ports = self.listCommPorts()
+        ports = ['a', 'b']
         
         for port in ports:
             self.commPortDropDown.insert(END, port)
@@ -254,6 +277,34 @@ class GadoGui(Frame):
         self.deleteButton["command"] = self.pauseRobot
         self.deleteButton.grid(row=2, column=1, sticky=N+S+E+W, padx=10, pady=5)
         
+    def createConfigurationWindowWidgets(self):
+        #Set the title
+        self.configurationWindow.title("Configure Your Setup")
+        
+        self.mylabel = Label(self.configurationWindow)
+        self.mylabel["text"] = "Set the locations for your current setup"
+        self.mylabel.grid(row=0, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        
+        self.inputTrayButton = Button(self.configurationWindow)
+        self.inputTrayButton["text"] = "Input Tray Location"
+        self.inputTrayButton["command"] = self.configDialog.deiconify
+        self.inputTrayButton.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        
+        self.scannerLocation = Button(self.configurationWindow)
+        self.scannerLocation["text"] = "Scanner Location"
+        self.scannerLocation["command"] = self.configDialog.deiconify
+        self.scannerLocation.grid(row=2, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        
+        self.outputTrayLocation = Button(self.configurationWindow)
+        self.outputTrayLocation["text"] = "Output Tray Location"
+        self.outputTrayLocation["command"] = self.configDialog.deiconify
+        self.outputTrayLocation.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        
+        self.scannerHeight = Button(self.configurationWindow)
+        self.scannerHeight["text"] = "Scanner Height"
+        self.scannerHeight["command"] = self.configDialog.deiconify
+        self.scannerHeight.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        
     #################################################################################
     #####                           LOCATION WINDOW FUNCTIONS                   #####
     #################################################################################    
@@ -264,14 +315,6 @@ class GadoGui(Frame):
         idx = self.artifactSets.curselection()[0]
         self.currentParent = self.artifact_sets[int(idx)][0]
         print "Have %s selected" % (self.currentParent)
-            
-    def calculateChildLevel(self, artifactSetId):
-        sets = self.db(self.db.artifact_sets.id == artifactSetId).select()
-        for s in sets:
-            if(s['parent'] != None):
-                return self.calculateChildLevel(s['parent']) + 1
-            else:
-                return 0
             
     def buildArtifactSetList(self):
         #Clear current list
@@ -301,9 +344,70 @@ class GadoGui(Frame):
         self.buildArtifactSetList()
         
     #################################################################################
+    #####                     CONFIGURATION LAYOUT  FUNCTIONS                   #####
+    #################################################################################
+    
+    def keyboardCallback(self, event):
+        
+        #Check to see how long ago we recieved a keypress
+        #We don't want to flood the robot with commands or it will hang/behave eratically
+        
+        self._currentTime = time.time()
+        print "Time: " + str(self._currentTime)
+        if self._currentTime - self._lastTime > 0.1:
+            key = event.keycode
+            
+            if key == 37:
+                #Left arrow press
+                self.gado_sys.moveArmBackwards()
+                
+            elif key == 38:
+                #Up arrow press
+                self.gado_sys.moveActuatorDown()
+                
+            elif key == 39:
+                #Right arrow press
+                self.gado_sys.moveArmForward()
+                
+            elif key == 40:
+                #Down arrow press
+                self.gado_sys.moveActuatorUp()
+            else:
+                print "key: " + str(event.keycode)
+            
+            #Set _lastTime to the _currentTime
+            self._lastTime = self._currentTime
+        
+    def configureLayout(self):
+        
+        self.createConfigurationWindowWidgets()
+        #self.configurationWindow.bind("<Key>", self.keyboardCallback)
+        self.configurationWindow.deiconify()
+        
+        #Create the toplevel window to tell the user what to do to configure the arm/actuator
+        self.configDialog.title("Instructions")
+        
+        self.configDialog.bind("<Key>", self.keyboardCallback)
+        
+        #Label to tell user what's up
+        self.configLabel = Label(self.configDialog)
+        self.configLabel["text"] = "Using the arrow keys, move the arm of the robot to the desired location\n\nWhen finished hit Done"
+        self.configLabel.grid(row=0, column=0, sticky=N+S+E+W, padx=10, pady=10)
+        
+        #Done button
+        self.doneButton = Button(self.configDialog)
+        self.doneButton["text"] = "Done"
+        self.doneButton["command"] = self.saveConfig #  DOESN'T EXIST YET
+        self.doneButton.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        
+        
+    #################################################################################
     #####                           FUNCTION WRAPPERS                           #####
     #################################################################################
-
+    
+    def saveConfig(self):
+        self.configDialog.withdraw()
+    
     #Query the current system for all available serial ports
     #Try to to connect to each port and "shake hands" with the robot
     #If it is in fact the robot, the handshake will match the expected value
@@ -312,11 +416,11 @@ class GadoGui(Frame):
         
         #Collect all ports available
         ports = self.listCommPorts()
-        
+        print "got ports: " + str(ports)
         #Test each one until we find the Gado (or we don't)
         for port in ports:
             #Try these settings
-            self.serialConnection.baudrate = self.settings['baudrate']
+            self.serialConnection.baudrate = 115200#self.settings['baudrate']
             self.serialConnection.port = port
             
             #Try and connect to this serial port
@@ -330,51 +434,41 @@ class GadoGui(Frame):
                     print "Found the gado! at port: %s with handshake: %s" % (port, gado.handshake())
             except:
                 print "No luck with port: %s" % (port)
-            
+                
     def listCommPorts(self):
-        
-        #Query the comm ports available on the system
-        rawPortList = str(subprocess.check_output(["python", "-m", "serial.tools.list_ports"]))
-        ports = re.findall('(COM\d+)', rawPortList)
-        
-        #Return a list of those ports
-        return ports
+        system_name = platform.system()
+        if system_name == "Windows":
+            # Scan for available ports.
+            available = []
+            for i in range(256):
+                try:
+                    s = serial.Serial(i)
+                    available.append(i)
+                    s.close()
+                except serial.SerialException:
+                    pass
+            return available
+        elif system_name == "Darwin":
+            # Mac
+            return glob.glob('/dev/tty*') + glob.glob('/dev/cu*')
+        else:
+            # Assume Linux or something else
+            return glob.glob('/dev/ttyS*') + glob.glob('/dev/ttyUSB*')
     
     def connectToRobot(self):
-        #Check to see if a comm port is selected
-        if self.commPortDropDown.get() != None:
-            
-            #Apply settings
-            self.serialConnection.baudrate = self.settings['baudrate']
-            self.serialConnection.port = self.commPortDropDown.get()
-            
-            #Open the connection
-            try:
-                self.serialConnection.open()
-            except:
-                tkMessageBox.showerror("Connection Status", "Failed with message: %s" % (sys.exc_info()[1]))
-                return False
-            
-            #check to make sure it was a success
-            if self.serialConnection.isOpen():
-                
-                #Connect to actual robot
-                self.gado = Robot(self.serialConnection, self.settings)
-                tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
-                
-                return True
+        success = self.gado_sys.connect()
+        if success:
+            tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
         else:
-            tkMessageBox.showerror("Connection Status", "Could not connect to comm port: %s" % (self.commPortDropDown.get()))
-            return False
+            tkMessageBox.showerror("Connection Status", "Could not connect to Gado, please ensure it is on and plugged into the computer")
+        return success
     
     def disconnectFromRobot(self):
-        #Check to see if port is already open
-        if self.serialConnection.isOpen():
-            self.serialConnection.close()
-            
+        success = self.gado_sys.disconnect()
+        if success:
             tkMessageBox.showinfo("Connection Status", "Closed connection to Gado!")
         else:
-            tkMessageBox.showerror("Connection Status", "No open connection found!")
+            tkMessageBox.showerror("Connection Status", "Error closing connection, was it connected?")
     
     def startRobot(self):
         #Function call to start robot's operation
@@ -382,19 +476,22 @@ class GadoGui(Frame):
         
         #self.gado.lowerAndLiftInternal()
         #self.gado.sendRawActuatorWithoutBlocking(200)
-        self.gado.start()
+        self.gado_sys.start()
         
     def pauseRobot(self):
         #Function call to pause robot's operation
         print "Pausing robot..."
-        self.gado.pause()
-        
+        self.gado_sys.pause()
+    
+    def resumeRobot(self):
+        self.gado_sys.resume()
+    
     def stopRobot(self):
         #Function call to stop robot's operation
         print "Stopping robot..."
-        self.gado.stop()
+        self.gado_sys.stop()
         
     def resetRobot(self):
         #Function call to reset the robot's operations
         print "Restarting robot..."
-        self.gado.reset()
+        self.gado_sys.reset()

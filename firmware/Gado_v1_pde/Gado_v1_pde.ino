@@ -39,7 +39,7 @@ int actuator_position_pin = 2;
 int arm_servo_pin = 5;
 
 #define buttonPin A1
-const String handshake = "I'm a robot!";
+const String handshake = "Im a robot!";
 
 void setup() 
 { 
