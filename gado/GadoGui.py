@@ -4,14 +4,9 @@ import tkMessageBox
 import ttk
 from gado.ProgressMeter import *
 import Pmw
-import os.path
-import serial
-import re
-import subprocess
 import time
 import platform
 from gado.Robot import Robot
-from gado.functions import *
 import TestTopLevel
 
 class GadoGui(Frame):
@@ -28,10 +23,6 @@ class GadoGui(Frame):
     
     #Robot object
     global gado
-    global settings
-    
-    #Serial object
-    global serialConnection
     
     #Time objects for setup MOVE IT ALL TO ITS OWN CLASS
     

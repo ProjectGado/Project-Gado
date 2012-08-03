@@ -71,8 +71,12 @@ class Robot(object):
         return False
     
     def disconnect(self):
+<<<<<<< HEAD
         if self.serialConnection.isOpen():
             self.serialConnection.close()
+=======
+        pass
+>>>>>>> a5bef515f8dca3a4b813e1ec7da12636d77b4480
     
     def connected(self):
         '''
@@ -181,6 +185,9 @@ class Robot(object):
     def reset(self):
         self.resetArm()
         self.resetActuator()
-        
+    
+    def in_pile(self):
+        self.moveArm(self.arm_in_value)
+    
     def listCommPorts(self):
         return self.serialConnection.tools.list_ports()
