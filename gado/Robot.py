@@ -71,12 +71,8 @@ class Robot(object):
         return False
     
     def disconnect(self):
-<<<<<<< HEAD
         if self.serialConnection.isOpen():
             self.serialConnection.close()
-=======
-        pass
->>>>>>> a5bef515f8dca3a4b813e1ec7da12636d77b4480
     
     def connected(self):
         '''

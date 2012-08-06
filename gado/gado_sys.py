@@ -1,5 +1,4 @@
 from gado.Robot import Robot
-<<<<<<< HEAD
 import thread
 import subprocess
 import re
@@ -9,10 +8,6 @@ import itertools
 from threading import Thread
 import serial
 import time
-=======
-from threading import Thread
-import subprocess, re
->>>>>>> a5bef515f8dca3a4b813e1ec7da12636d77b4480
 
 class WebcamThread(Thread):
     def __init__(self):

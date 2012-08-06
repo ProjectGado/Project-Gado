@@ -2,12 +2,11 @@ import sys
 from Tkinter import *
 import tkMessageBox
 import ttk
-from gado.ProgressMeter import *
+#from gado.ProgressMeter import *
 import Pmw
 import time
 import platform
 from gado.Robot import Robot
-import TestTopLevel
 
 class GadoGui(Frame):
     
