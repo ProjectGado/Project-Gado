@@ -7,6 +7,7 @@ import _winreg
 import itertools
 from threading import Thread
 import serial
+from gado.functions import *
 import time
 
 class WebcamThread(Thread):
@@ -69,6 +70,9 @@ class GadoSystem():
         self._armPosition = 0
         self._actuatorPosition = 0
     
+    def updateSettings(self):
+        self.robot.updateSettings(**import_settings())
+    
     def moveArmBackwards(self):
         if self._armPosition > 0:
             self._armPosition -= 1
@@ -98,9 +102,13 @@ class GadoSystem():
     def getArmPosition(self):
         
         #Get the current setup properties from the Gado
-        currentSetup = self.robot.returnGadoInfo()
+        #currentSetup = self.robot.returnGadoInfo()
         
-        print "Current setup: %s" % currentSetup
+        #print "Current setup: %s" % currentSetup
+        return self._armPosition
+    
+    def getActuatorPosition(self):
+        return self._actuatorPosition
     
     def _intialize(self):
         self.sthread = ScannerThread('initialize')
@@ -115,7 +123,7 @@ class GadoSystem():
         self.robot.in_pile()
     
     def start(self):
-        self.robot._moveArm(100)
+        self.robot.start()
         '''# Sanity check
         if not self.robot.connected():
             raise Exception("No robot connected")
@@ -158,6 +166,8 @@ class GadoSystem():
                 
                 #Found the robot!
                 if success:
+                    #Put robot in its home position
+                    #self.robot.reset()
                     return True
                 print "Done with command."
         return False

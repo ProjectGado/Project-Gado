@@ -1,6 +1,7 @@
 import serial
 import platform
 import time
+import sys
 
 #Constants
 MOVE_ARM = 'a'
@@ -21,14 +22,30 @@ class Robot(object):
     global serialConnection
     
     
-    def __init__(self, arm_home_value, arm_in_value, arm_out_value, actuator_home_value, baudrate, **kargs):
+    def __init__(self, arm_home_value, arm_in_value, arm_out_value, actuator_home_value, baudrate, actuator_up_value, **kargs):
         #Grab settings
         self.arm_home_value = arm_home_value
         self.arm_in_value = arm_in_value
         self.arm_out_value = arm_out_value
         self.actuator_home_value = actuator_home_value
         self.baudrate = baudrate
+        self.actuator_up_value = actuator_up_value
         self.serialConnection = None
+        
+    #Take in a dictionary of all of the robot settings and make these the current settings
+    #It is important that all robot specific settings are passed, otherwise things may break
+    def updateSettings(self, **kwargs):
+        
+        #try and update
+        try:
+            self.arm_home_value = kwargs['arm_home_value']
+            self.arm_in_value = kwargs['arm_in_value']
+            self.arm_out_value = kwargs['arm_out_value']
+            self.actuator_home_value = kwargs['actuator_home_value']
+            self.actuator_up_value = kwargs['actuator_up_value']
+            self.baudrate = kwargs['baudrate']
+        except:
+            print "Error when trying to update robot settings... (Make sure all settings were passed)\n Error: %s" % sys.exc_info()[0]
         
     def returnGadoInfo(self):
         if self.serialConnection.isOpen():
@@ -111,11 +128,11 @@ class Robot(object):
         
         
     #Turn on the vacuum to the power level: value
-    def _vacuumOn(self, boolean):
+    def _vacuumOn(self, value):
         '''
             
         '''
-        self.serialConnection.write("%s%s" % (value, self.MOVE_VACUUM))        
+        self.serialConnection.write("%s%s" % (value, MOVE_VACUUM))        
     
     #Clear all buffers on the serial line
     def clearSerialBuffers(self):
@@ -128,8 +145,8 @@ class Robot(object):
     #Reset the robot to the home position
     def reset(self):
         self._moveArm(self.arm_home_value)
-        self._moveActuator(self.actuator_home_value)
-        self._vacuumOn(False)
+        self._moveActuator(self.actuator_up_value)
+        self._vacuumOn(0)
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware
@@ -142,22 +159,22 @@ class Robot(object):
         
         #reset the robot to the default values
         self.reset()
-        
-        
+        print "Starting the fucking robot"
+        '''
         completed = False
         while not completed:
             pass
-        
+        '''
         
         ##CODE TO TAKE A PICTURE OF THE BACK OF TEH IMAGE##
         
         ##CHECK TO SEE IF WE FOUND A BARCODE (END OF STACK)##
         
         ##IF NOT, LOWER AND LIFT##
-        self.pickUpObject()
+        #self.pickUpObject()
         
         ##MOVE TO SCANNER AND DROP UNTIL WE HIT IT##
-        self.moveArm(self.settings['scanner_location'])
+        #self.moveArm(self.settings['scanner_location'])
         #self.pickUpObject()
         
         ##TURN ON SCANNER AND SCAN THE IMAGE##
@@ -177,11 +194,11 @@ class Robot(object):
     def stop(self):
         pass
     
-    #Reset all aspects of the robot
+    '''#Reset all aspects of the robot
     def reset(self):
         self.resetArm()
         self.resetActuator()
-    
+    '''
     def in_pile(self):
         self.moveArm(self.arm_in_value)
     

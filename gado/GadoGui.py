@@ -7,6 +7,7 @@ import Pmw
 import time
 import platform
 from gado.Robot import Robot
+from gado.functions import *
 
 class GadoGui(Frame):
     
@@ -22,6 +23,14 @@ class GadoGui(Frame):
     
     #Robot object
     global gado
+    
+    #Enums for which aspect of the gado we're configuring
+    INPUT_TRAY_LOCATION = 0
+    OUTPUT_TRAY_LOCATION = 1
+    SCANNER_LOCATION = 2
+    SCANNER_HEIGHT = 3
+    
+    global currentConfParam
     
     #Time objects for setup MOVE IT ALL TO ITS OWN CLASS
     
@@ -80,6 +89,9 @@ class GadoGui(Frame):
         
         #Init current selected parent to None
         self.currentParent = None
+        
+        #Set the current conf parameter to None
+        self.currentConfParam = None
         
         #Pack the widgets and create the GUI
         self.pack()
@@ -277,22 +289,22 @@ class GadoGui(Frame):
         
         self.inputTrayButton = Button(self.configurationWindow)
         self.inputTrayButton["text"] = "Input Tray Location"
-        self.inputTrayButton["command"] = self.configDialog.deiconify
+        self.inputTrayButton["command"] = lambda: self.launchConfigDialog(self.INPUT_TRAY_LOCATION)#self.configDialog.deiconify
         self.inputTrayButton.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
         
         self.scannerLocation = Button(self.configurationWindow)
         self.scannerLocation["text"] = "Scanner Location"
-        self.scannerLocation["command"] = self.configDialog.deiconify
+        self.scannerLocation["command"] = lambda: self.launchConfigDialog(self.SCANNER_LOCATION)#self.configDialog.deiconify
         self.scannerLocation.grid(row=2, column=0, sticky=N+S+E+W, padx=10, pady=5)
         
         self.outputTrayLocation = Button(self.configurationWindow)
         self.outputTrayLocation["text"] = "Output Tray Location"
-        self.outputTrayLocation["command"] = self.configDialog.deiconify
+        self.outputTrayLocation["command"] = lambda: self.launchConfigDialog(self.OUTPUT_TRAY_LOCATION)#self.configDialog.deiconify
         self.outputTrayLocation.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5)
         
         self.scannerHeight = Button(self.configurationWindow)
         self.scannerHeight["text"] = "Scanner Height"
-        self.scannerHeight["command"] = self.configDialog.deiconify
+        self.scannerHeight["command"] = lambda: self.launchConfigDialog(self.SCANNER_HEIGHT)#self.configDialog.deiconify
         self.scannerHeight.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5)
         
     #################################################################################
@@ -336,6 +348,13 @@ class GadoGui(Frame):
     #################################################################################
     #####                     CONFIGURATION LAYOUT  FUNCTIONS                   #####
     #################################################################################
+    
+    def launchConfigDialog(self, parameter):
+        #Expose the configDialog window
+        self.configDialog.deiconify()
+        
+        self.currentConfParam = parameter
+        print "launched the instruction window wiht param: %s" % self.currentConfParam
     
     def keyboardCallback(self, event):
         
@@ -395,7 +414,41 @@ class GadoGui(Frame):
     #####                           FUNCTION WRAPPERS                           #####
     #################################################################################
     
+    #Save the particular value from the layout setup process
     def saveConfig(self):
+        #Whenever we launch one of the configuration windows (input tray locaiton, scanner height, etc)
+        #We also set the currentConfParam to whichever parameter it is we are tweaking
+        #This way, we always know what the value we gathered is associated with
+        if self.currentConfParam is not None:
+            if self.currentConfParam == self.INPUT_TRAY_LOCATION:
+                print "Saving input tray location as: %s" % self.gado_sys.getArmPosition()
+                
+                kwargs = {'arm_in_value' : self.gado_sys.getArmPosition()}
+                
+            elif self.currentConfParam == self.OUTPUT_TRAY_LOCATION:
+                print "Saving output tray location as %s" % self.gado_sys.getArmPosition()
+                
+                kwargs = {'arm_out_value' : self.gado_sys.getArmPosition()}
+                
+            elif self.currentConfParam == self.SCANNER_LOCATION:
+                print "Saving scanner location as %s" % self.gado_sys.getArmPosition()
+                
+                kwargs = {'arm_home_value' : self.gado_sys.getArmPosition()}
+                
+            elif self.currentConfParam == self.SCANNER_HEIGHT:
+                print "Saving scanner height as %s" % self.gado_sys.getActuatorPosition()
+                
+                kwargs = {'actuator_home_value' : self.gado_sys.getActuatorPosition()}
+                
+            #Export whatever settings have changed
+            export_settings(**kwargs)
+            
+            #Update the settings that are being used by the robot
+            self.gado_sys.updateSettings()
+        else:
+            print "Something went wrong, have no idea which config parameter I'm working with..."
+            
+        #Get rid of the instructions window    
         self.configDialog.withdraw()
     
     #Query the current system for all available serial ports

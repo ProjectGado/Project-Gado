@@ -47,4 +47,5 @@ class ProgressBar(Frame):
             #tkMessageBox.showinfo("Auto Connection", "We found and connected to the Gado!")
         else:
             print "fail!"
+            self.quit()
             #tkMessageBox.showerror("Auto Connection", "We weren't able to find the robot. Try manual configuration")
