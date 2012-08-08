@@ -9,6 +9,7 @@ from threading import Thread
 import serial
 from gado.functions import *
 import time
+from gado.pytesser import *
 
 class WebcamThread(Thread):
     def __init__(self):
@@ -62,9 +63,10 @@ class RobotThread(Thread):
 
 class GadoSystem():
     
-    def __init__(self, dbi, robot):
+    def __init__(self, dbi, robot, camera):
         self.robot = robot
         self.dbi = dbi
+        self.camera = camera
         
         #set the settings to the default
         self._armPosition = 0
@@ -122,8 +124,25 @@ class GadoSystem():
         self.wthread.start()
         self.robot.in_pile()
     
+    def reset(self):
+        self.robot.reset()
+    
     def start(self):
-        self.robot.start()
+        #The actual looping should be happening here, instead of in Robot.py
+        #Robot.py should just run the loop once and all conditions/vars will be stored here
+        connected = False
+        
+        #While we're not done with this stack of images
+        while not connected:
+            #Continue for a single loop through the scanning process
+            self.camera.saveImage("superTest.jpg", self.camera.returnImage())
+            
+            #Grab out any OCR'able info
+            #text = image_to_string(Image.open('superTest.jpg'))
+            #print "OCR: %s" % text
+            
+            #Take a picture of the input stack
+            self.robot.start()
         '''# Sanity check
         if not self.robot.connected():
             raise Exception("No robot connected")

@@ -139,7 +139,7 @@ class GadoGui(Frame):
     
     def createWidgets(self):
         #Create the connection control widgets
-        self.createConnectionControlWidgets()
+        #self.createConnectionControlWidgets()
         
         #Create the artifactSet section
         self.createArtifactSetWidgets()

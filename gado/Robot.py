@@ -2,6 +2,7 @@ import serial
 import platform
 import time
 import sys
+from gado.pytesser import *
 
 #Constants
 MOVE_ARM = 'a'
@@ -156,10 +157,33 @@ class Robot(object):
     
     #Start the robot's scanning procedure
     def start(self):
+        completed = False
         
+        #while not completed:
         #reset the robot to the default values
         self.reset()
-        print "Starting the fucking robot"
+        
+        #Move to home position and pause for 2 seconds
+        time.sleep(5)
+        
+        #Move to0 input pile
+        self._moveArm(self.arm_in_value)
+        print "Input pile, taking picture"
+        time.sleep(5)
+        
+        #to scanner
+        self._moveArm(self.arm_home_value)
+        self._moveActuator(self.actuator_home_value)
+        
+        print "Above scanner"
+        time.sleep(5)
+        
+        #actuator up and to the output
+        self._moveActuator(self.actuator_up_value)
+        self._moveArm(self.arm_out_value)
+        
+        time.sleep(5)
+        #
         '''
         completed = False
         while not completed:
