@@ -21,6 +21,7 @@ from gado.db import DBFactory, DBInterface
 from Tkinter import Tk
 from gado.ProgressBar import *
 import threading
+from gado.Webcam import *
 
 class AutoConnectThread(threading.Thread):
     
@@ -40,6 +41,11 @@ class AutoConnectThread(threading.Thread):
 if __name__ == '__main__':
     print "Initializing Gado Robot Management Interface"
     
+    #Test picture taking
+    camera = Webcam()
+    print "Connected to webcam: %s" % str(camera.connect())
+    #camera.saveImage("superTest.jpg", camera.returnImage())
+    
     # Import current gado settings
     settings = import_settings()
     
@@ -51,7 +57,7 @@ if __name__ == '__main__':
     gado = Robot(**settings)
     
     #Start up the Gado System for management
-    gado_sys = GadoSystem(db_interface, gado)
+    gado_sys = GadoSystem(db_interface, gado, camera)
     
     #Create root of application
     tk = Tk()
