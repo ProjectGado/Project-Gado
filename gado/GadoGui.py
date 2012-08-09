@@ -9,32 +9,12 @@ import platform
 from gado.Robot import Robot
 from gado.functions import *
 from gado.gui.ManageSets import ManageSets
+from gado.gui.ConfigurationWindow import ConfigurationWindow
 
 class GadoGui(Frame):
     
     #Widgets
     global artifactSetDropDown
-    global artifactSetWindow
-    global commPortDropDown
-    global configDialog
-    
-    global currentParent
-    
-    #Robot object
-    global gado
-    
-    #Enums for which aspect of the gado we're configuring
-    INPUT_TRAY_LOCATION = 0
-    OUTPUT_TRAY_LOCATION = 1
-    SCANNER_LOCATION = 2
-    SCANNER_HEIGHT = 3
-    
-    global currentConfParam
-    
-    #Time objects for setup MOVE IT ALL TO ITS OWN CLASS
-    
-    global _lastTime
-    global _currentTime
     
     def _demo(meter, value):
         meter.set(value)
@@ -54,20 +34,19 @@ class GadoGui(Frame):
         # The Gado ecosystem manager
         self.gado_sys = gado_system
         
-        #Init the time
-        self._lastTime = 0
-        self._currentTime = 0
-        
         #Store the database connection as a global
         self.dbi = db_interface
+        
+        self.manage_sets = ManageSets(self.root, self.dbi, self.gado_sys)
+        self.config_window = ConfigurationWindow(self.root, self.dbi, self.gado_sys)
         
         #Create all menus for application
         self.createMenus(self.root)
         
-        self.manage_sets = ManageSets(self.root, self.dbi, self.gado_sys)
+       # self.createTopLevelWidgets()
         
-        self.createTopLevelWidgets()
         
+        '''
         #self.manage_gui = ManageArtifactSetGui(self)
        # self.manage_gui.withdraw()
         
@@ -77,8 +56,7 @@ class GadoGui(Frame):
         #create the config dialog toplevel object
         self.configDialog = Toplevel(self)
         
-        self.configDialog.protocol("WM_DELETE_WINDOW", self.configDialog.withdraw)
-        self.configDialog.withdraw()
+
         
         self.createConfigurationWindowWidgets()
         
@@ -87,7 +65,7 @@ class GadoGui(Frame):
         
         #Set the current conf parameter to None
         self.currentConfParam = None
-        
+        '''
         #Pack the widgets and create the GUI
         self.pack()
         self.createWidgets()
@@ -124,7 +102,7 @@ class GadoGui(Frame):
     def createSettingsMenu(self, menubar=None, master=None):
         
         self.settingsMenu = Menu(self.menubar, tearoff=0)
-        self.settingsMenu.add_command(label="Configure Layout", command=self.configureLayout)
+        self.settingsMenu.add_command(label="Configure Layout", command=self.config_window.show)
         
         return self.settingsMenu
         
@@ -179,35 +157,22 @@ class GadoGui(Frame):
         
     def createArtifactSetWidgets(self):
         #Create label
-        self.artifactSetLabel = Label(self)
-        self.artifactSetLabel["text"] = "ArtifactSet: "
-        self.artifactSetLabel.grid(row=3, column=0, sticky=W, padx=10, pady=5)
+        artifactSetLabel = Label(self)
+        artifactSetLabel["text"] = "Artifact Set: "
+        artifactSetLabel.grid(row=3, column=0, sticky=W, padx=10, pady=5)
         
-        #Create dropdown for artifactSet selection
-        self.artifactSetDropDown = Pmw.ComboBox(self)
-        self.artifactSetDropDown.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        #Create dropdown for selecting an artifact set
+        set_dropdown = Pmw.ComboBox(self)
+        set_dropdown.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        self.set_dropdown = set_dropdown
+        self._populate_set_dropdown()
         
-        
-        #Add entries to that dropdown
-        
-        #At the moment, we don't have anything built to insert the most recent artifactSets
-        #We'll need to tie that into the database abstraction layer
-        #For the time being we'll put in some temp data
-        self.artifactSetDropDown.insert(END, "Loc 1")
-        self.artifactSetDropDown.insert(END, "Loc 2")
-        
-        # TODO
-        
-        #Add the button to create a new artifactSet
-        self.addArtifactSetButton = Button(self)
-        self.addArtifactSetButton["text"] = "New Artifact Set"
-        #self.addArtifactSetButton["command"] = self.show_add_dialogue
-        self.addArtifactSetButton["command"] = self.temp_show
-        self.addArtifactSetButton.grid(row=4, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
-    
-    def temp_show(self):
-        self.manage_sets.show()
-    
+        # Add the button to create a new artifact set
+        new_set_button = Button(self)
+        new_set_button["text"] = "New Artifact Set"
+        new_set_button["command"] = self.manage_sets.show
+        new_set_button.grid(row=4, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+
     def createControlWidgets(self):
         #Create label
         self.controlLabel = Label(self)
@@ -245,172 +210,13 @@ class GadoGui(Frame):
         self.messageEntry = Entry(self)
         self.messageEntry.grid(row=9, column=0, columnspan=4, sticky=N+S+E+W, padx=10, pady=5)
     
-    def createTopLevelWidgets(self):
-         pass
-        
-    def createConfigurationWindowWidgets(self):
-        #Set the title
-        self.configurationWindow.title("Configure Your Setup")
-        
-        self.mylabel = Label(self.configurationWindow)
-        self.mylabel["text"] = "Set the locations for your current setup"
-        self.mylabel.grid(row=0, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        self.inputTrayButton = Button(self.configurationWindow)
-        self.inputTrayButton["text"] = "Input Tray Location"
-        self.inputTrayButton["command"] = lambda: self.launchConfigDialog(self.INPUT_TRAY_LOCATION)#self.configDialog.deiconify
-        self.inputTrayButton.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        self.scannerLocation = Button(self.configurationWindow)
-        self.scannerLocation["text"] = "Scanner Location"
-        self.scannerLocation["command"] = lambda: self.launchConfigDialog(self.SCANNER_LOCATION)#self.configDialog.deiconify
-        self.scannerLocation.grid(row=2, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        self.outputTrayLocation = Button(self.configurationWindow)
-        self.outputTrayLocation["text"] = "Output Tray Location"
-        self.outputTrayLocation["command"] = lambda: self.launchConfigDialog(self.OUTPUT_TRAY_LOCATION)#self.configDialog.deiconify
-        self.outputTrayLocation.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        self.scannerHeight = Button(self.configurationWindow)
-        self.scannerHeight["text"] = "Scanner Height"
-        self.scannerHeight["command"] = lambda: self.launchConfigDialog(self.SCANNER_HEIGHT)#self.configDialog.deiconify
-        self.scannerHeight.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-    #################################################################################
-    #####                           LOCATION WINDOW FUNCTIONS                   #####
-    #################################################################################    
-    
-
-    
-    def buildArtifactSetList(self):
-        #Clear current list
-        self.artifactSets.delete(0, 'end')
-        
-        #Need to get current artifact sets and insert them into the list box
-        self.artifact_sets = self.dbi.artifact_set_list()
-        for id, indented_name in self.artifact_sets:
-            self.artifactSets.insert('end', indented_name)
-    
-    def show_add_dialogue(self):
-        #Function call to add a new artifactSet through the DAL
-        print "Adding new artifactSet..."
-        
-        #Build the list of current artifactSets
-        self.buildArtifactSetList()
-            
-        #Bring the toplevel window into view
-        self.artifactSetWindow.deiconify()
-    
-    def insertNewArtifactSet(self):
-        '''Adds a new Artifact Set to the db and refreshes the view'''
-        self.dbi.add_artifact_set(self.nameEntry.get(), self.currentParent)
-        self.buildArtifactSetList()
-        
-    #################################################################################
-    #####                     CONFIGURATION LAYOUT  FUNCTIONS                   #####
-    #################################################################################
-    
-    def launchConfigDialog(self, parameter):
-        #Expose the configDialog window
-        self.configDialog.deiconify()
-        
-        self.currentConfParam = parameter
-        print "launched the instruction window wiht param: %s" % self.currentConfParam
-    
-    def keyboardCallback(self, event):
-        
-        #Check to see how long ago we recieved a keypress
-        #We don't want to flood the robot with commands or it will hang/behave eratically
-        
-        self._currentTime = time.time()
-        print "Time: " + str(self._currentTime)
-        if self._currentTime - self._lastTime > 0.1:
-            key = event.keycode
-            
-            if key == 37:
-                #Left arrow press
-                self.gado_sys.moveArmBackwards()
-                
-            elif key == 38:
-                #Up arrow press
-                self.gado_sys.moveActuatorDown()
-                
-            elif key == 39:
-                #Right arrow press
-                self.gado_sys.moveArmForward()
-                
-            elif key == 40:
-                #Down arrow press
-                self.gado_sys.moveActuatorUp()
-            else:
-                print "key: " + str(event.keycode)
-            
-            #Set _lastTime to the _currentTime
-            self._lastTime = self._currentTime
-        
-    def configureLayout(self):
-        
-        self.createConfigurationWindowWidgets()
-        #self.configurationWindow.bind("<Key>", self.keyboardCallback)
-        self.configurationWindow.deiconify()
-        
-        #Create the toplevel window to tell the user what to do to configure the arm/actuator
-        self.configDialog.title("Instructions")
-        
-        self.configDialog.bind("<Key>", self.keyboardCallback)
-        
-        #Label to tell user what's up
-        self.configLabel = Label(self.configDialog)
-        self.configLabel["text"] = "Using the arrow keys, move the arm of the robot to the desired location\n\nWhen finished hit Done"
-        self.configLabel.grid(row=0, column=0, sticky=N+S+E+W, padx=10, pady=10)
-        
-        #Done button
-        self.doneButton = Button(self.configDialog)
-        self.doneButton["text"] = "Done"
-        self.doneButton["command"] = self.saveConfig #  DOESN'T EXIST YET
-        self.doneButton.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
         
     #################################################################################
     #####                           FUNCTION WRAPPERS                           #####
     #################################################################################
     
-    #Save the particular value from the layout setup process
-    def saveConfig(self):
-        #Whenever we launch one of the configuration windows (input tray locaiton, scanner height, etc)
-        #We also set the currentConfParam to whichever parameter it is we are tweaking
-        #This way, we always know what the value we gathered is associated with
-        if self.currentConfParam is not None:
-            if self.currentConfParam == self.INPUT_TRAY_LOCATION:
-                print "Saving input tray location as: %s" % self.gado_sys.getArmPosition()
-                
-                kwargs = {'arm_in_value' : self.gado_sys.getArmPosition()}
-                
-            elif self.currentConfParam == self.OUTPUT_TRAY_LOCATION:
-                print "Saving output tray location as %s" % self.gado_sys.getArmPosition()
-                
-                kwargs = {'arm_out_value' : self.gado_sys.getArmPosition()}
-                
-            elif self.currentConfParam == self.SCANNER_LOCATION:
-                print "Saving scanner location as %s" % self.gado_sys.getArmPosition()
-                
-                kwargs = {'arm_home_value' : self.gado_sys.getArmPosition()}
-                
-            elif self.currentConfParam == self.SCANNER_HEIGHT:
-                print "Saving scanner height as %s" % self.gado_sys.getActuatorPosition()
-                
-                kwargs = {'actuator_home_value' : self.gado_sys.getActuatorPosition()}
-                
-            #Export whatever settings have changed
-            export_settings(**kwargs)
-            
-            #Update the settings that are being used by the robot
-            self.gado_sys.updateSettings()
-        else:
-            print "Something went wrong, have no idea which config parameter I'm working with..."
-            
-        #Get rid of the instructions window    
-        self.configDialog.withdraw()
+    def _populate_set_dropdown(self):
+        pass
     
     def connectToRobot(self):
         success = self.gado_sys.connect()
