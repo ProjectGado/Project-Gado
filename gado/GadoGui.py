@@ -8,14 +8,13 @@ import time
 import platform
 from gado.Robot import Robot
 from gado.functions import *
+from gado.gui.ManageSets import ManageSets
 
 class GadoGui(Frame):
     
     #Widgets
     global artifactSetDropDown
     global artifactSetWindow
-    global artifactSets
-    global nameEntry
     global commPortDropDown
     global configDialog
     
@@ -64,14 +63,13 @@ class GadoGui(Frame):
         
         #Create all menus for application
         self.createMenus(self.root)
-
-        #Create a toplevel window to deal with artifactSet management
-        self.artifactSetWindow = Toplevel(self)
+        
+        self.manage_sets = ManageSets(self.root, self.dbi, self.gado_sys)
         
         self.createTopLevelWidgets()
         
-        self.artifactSetWindow.protocol("WM_DELETE_WINDOW", self.artifactSetWindow.withdraw)
-        self.artifactSetWindow.withdraw()
+        #self.manage_gui = ManageArtifactSetGui(self)
+       # self.manage_gui.withdraw()
         
         #configure the layout of the gado setup
         self.configurationWindow = Toplevel(self)
@@ -86,9 +84,6 @@ class GadoGui(Frame):
         
         self.configurationWindow.protocol("WM_DELETE_WINDOW", self.configurationWindow.withdraw)
         self.configurationWindow.withdraw()
-        
-        #Init current selected parent to None
-        self.currentParent = None
         
         #Set the current conf parameter to None
         self.currentConfParam = None
@@ -192,6 +187,7 @@ class GadoGui(Frame):
         self.artifactSetDropDown = Pmw.ComboBox(self)
         self.artifactSetDropDown.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         
+        
         #Add entries to that dropdown
         
         #At the moment, we don't have anything built to insert the most recent artifactSets
@@ -200,12 +196,18 @@ class GadoGui(Frame):
         self.artifactSetDropDown.insert(END, "Loc 1")
         self.artifactSetDropDown.insert(END, "Loc 2")
         
+        # TODO
+        
         #Add the button to create a new artifactSet
         self.addArtifactSetButton = Button(self)
         self.addArtifactSetButton["text"] = "New Artifact Set"
-        self.addArtifactSetButton["command"] = self.addArtifactSet
+        #self.addArtifactSetButton["command"] = self.show_add_dialogue
+        self.addArtifactSetButton["command"] = self.temp_show
         self.addArtifactSetButton.grid(row=4, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
-        
+    
+    def temp_show(self):
+        self.manage_sets.show()
+    
     def createControlWidgets(self):
         #Create label
         self.controlLabel = Label(self)
@@ -244,40 +246,7 @@ class GadoGui(Frame):
         self.messageEntry.grid(row=9, column=0, columnspan=4, sticky=N+S+E+W, padx=10, pady=5)
     
     def createTopLevelWidgets(self):
-        self.artifactSetWindow.title("Manage Artifact Sets")
-        
-        #Create the artifactSet list box
-        self.artifactSets = Pmw.ScrolledListBox(self.artifactSetWindow,
-                                       items=(),
-                                       labelpos='nw',
-                                       label_text='Select a Parent: ',
-                                       listbox_height=6,
-                                       selectioncommand=self.setSelectedParent,
-                                       usehullsize=1,
-                                       hull_width = 200,
-                                       hull_height = 200,)
-        self.artifactSets.grid(row=0, column=0, columnspan=2, sticky=N+S+E+W, padx=10, pady=5)
-        
-        #Create a label for the name entry
-        self.nameLabel = Label(self.artifactSetWindow)
-        self.nameLabel["text"] = "Artifact Set Name: "
-        self.nameLabel.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        #Create the entry box for the name input
-        self.nameEntry = Entry(self.artifactSetWindow)
-        self.nameEntry.grid(row=1, column=1, sticky=N+S+E+W, padx=10, pady=5)
-        
-        #Create the add button
-        self.addButton = Button(self.artifactSetWindow)
-        self.addButton["text"] = "Add"
-        self.addButton["command"] = self.insertNewArtifactSet
-        self.addButton.grid(row=2, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        #Create the delete button
-        self.deleteButton = Button(self.artifactSetWindow)
-        self.deleteButton["text"] = "Delete"
-        self.deleteButton["command"] = self.pauseRobot
-        self.deleteButton.grid(row=2, column=1, sticky=N+S+E+W, padx=10, pady=5)
+         pass
         
     def createConfigurationWindowWidgets(self):
         #Set the title
@@ -311,13 +280,8 @@ class GadoGui(Frame):
     #####                           LOCATION WINDOW FUNCTIONS                   #####
     #################################################################################    
     
-    def setSelectedParent(self):
-        #Remove any tabs that are being displayed
-        
-        idx = self.artifactSets.curselection()[0]
-        self.currentParent = self.artifact_sets[int(idx)][0]
-        print "Have %s selected" % (self.currentParent)
-            
+
+    
     def buildArtifactSetList(self):
         #Clear current list
         self.artifactSets.delete(0, 'end')
@@ -326,8 +290,8 @@ class GadoGui(Frame):
         self.artifact_sets = self.dbi.artifact_set_list()
         for id, indented_name in self.artifact_sets:
             self.artifactSets.insert('end', indented_name)
-            
-    def addArtifactSet(self):
+    
+    def show_add_dialogue(self):
         #Function call to add a new artifactSet through the DAL
         print "Adding new artifactSet..."
         
@@ -337,11 +301,8 @@ class GadoGui(Frame):
         #Bring the toplevel window into view
         self.artifactSetWindow.deiconify()
     
-    #This function will insert a new artifactSet into the database
-    #IMPORTANT: at the moment we're assuming that all artifactSet names will be unique
-    #This is probably a false assumption so we should figure out some way to deal with Ids instead
     def insertNewArtifactSet(self):
-        print "Going to insert new artifact_set\nCurrent parent: %s and insert: %s" % (self.currentParent, self.nameEntry.get())
+        '''Adds a new Artifact Set to the db and refreshes the view'''
         self.dbi.add_artifact_set(self.nameEntry.get(), self.currentParent)
         self.buildArtifactSetList()
         
@@ -450,53 +411,6 @@ class GadoGui(Frame):
             
         #Get rid of the instructions window    
         self.configDialog.withdraw()
-    
-    #Query the current system for all available serial ports
-    #Try to to connect to each port and "shake hands" with the robot
-    #If it is in fact the robot, the handshake will match the expected value
-    #in the settings file
-    def autoConnectRobot(self):
-        
-        #Collect all ports available
-        ports = self.listCommPorts()
-        print "got ports: " + str(ports)
-        #Test each one until we find the Gado (or we don't)
-        for port in ports:
-            #Try these settings
-            self.serialConnection.baudrate = 115200#self.settings['baudrate']
-            self.serialConnection.port = port
-            
-            #Try and connect to this serial port
-            try:
-                self.serialConnection.open()
-                
-                #create a connection to the robot so we can try to shake hands
-                gado = Robot(self.serialConnection, self.settings)
-                
-                if self.serialConnection.isOpen() and gado.handshake() == self.settings['handshake']:
-                    print "Found the gado! at port: %s with handshake: %s" % (port, gado.handshake())
-            except:
-                print "No luck with port: %s" % (port)
-                
-    def listCommPorts(self):
-        system_name = platform.system()
-        if system_name == "Windows":
-            # Scan for available ports.
-            available = []
-            for i in range(256):
-                try:
-                    s = serial.Serial(i)
-                    available.append(i)
-                    s.close()
-                except serial.SerialException:
-                    pass
-            return available
-        elif system_name == "Darwin":
-            # Mac
-            return glob.glob('/dev/tty*') + glob.glob('/dev/cu*')
-        else:
-            # Assume Linux or something else
-            return glob.glob('/dev/ttyS*') + glob.glob('/dev/ttyUSB*')
     
     def connectToRobot(self):
         success = self.gado_sys.connect()

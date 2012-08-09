@@ -14,6 +14,8 @@ from gado.Webcam import *
 import Queue
 
 class WebcamThread(Thread):
+    def __init__(self):
+        pass
     def __init__(self, webcam):
         self.webcam = webcam
     
@@ -24,6 +26,10 @@ class WebcamThread(Thread):
         Thread.__init__(self)
         
     def run(self):
+        '''
+        Takes a picture of the back of the image
+        '''
+        self.image = 'output.png'
         print "In webcam thread, taking picture"
         self.webcam.saveImage("tttest.jpg", self.webcam.returnImage())
     
@@ -62,15 +68,20 @@ class RobotThread(Thread):
         #init the queue so we can receive messages from the GUI thread
         self.queue = Queue.Queue()
     
+    def run():
+        cmd = 'self.%s' % self.action
+        exec(cmd)
     #Do a single run on the robot's scanning procedure
     def run(self):
         #cmd = 'self.%s' % self.action
         #exec(cmd)
         self.robot.start()
         
+    def reset():
     def reset(self):
         self.robot.reset()
     
+    def in_pile():
     def in_pile(self):
         self.robot.in_pile()
     
@@ -155,9 +166,15 @@ class GadoSystem():
         
         #While we're not done with this stack of images
         while not connected:
-            #Continue for a single loop through the scanning process
+
+
+
+            self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             #self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             
+            #Grab out any OCR'able info
+            #text = image_to_string(Image.open('superTest.jpg'))
+            #print "OCR: %s" % text
             self.webCamThread.start()
             
             self.robotThread.start()
@@ -167,6 +184,7 @@ class GadoSystem():
             #print "OCR: %s" % text
             
             #Take a picture of the input stack
+            self.robot.start()
             
         '''# Sanity check
         if not self.robot.connected():
@@ -192,43 +210,33 @@ class GadoSystem():
         
         pass
         '''
-    def connect(self, port=None):
+    
+    def _connect(self, save_settings=True):
         '''
-        If port is none, then cycle through all available comm ports
+            Scan through ports attempting to connect to the robot.
+            If save_settings is True, then save the port information.
         '''
-        print "In connect in gado_sys\n"
-        
-        if not port:
-            #Query the comm ports available on the system
-            rawPortList = str(subprocess.check_output(["python", "-m", "serial.tools.list_ports"]))
-            ports = re.findall('(COM\d+)', rawPortList)
-            
-            for port in self.enumerate_serial_ports():
-                print "Connecting with port: %s" % port
-                success = self.robot.connect(port)
-                print "Connected? %s" % (success)
-                
-                #Found the robot!
-                if success:
-                    #Put robot in its home position
-                    #self.robot.reset()
-                    return True
-                print "Done with command."
-        return False
-        '''
-                success = self.robot.connect(port)
-                print "connected to port: %s" % port
-                if self.robot.connected():
-                    print "robot connected!"
-                    return True
-                else:
-                    print "robot not connected :()"
-                self.robot.disconnect()
-        else:
+        for port in self.enumerate_serial_ports():
             success = self.robot.connect(port)
-            success = self.robot.connected()
-            return success
-        return False'''
+            if success:
+                if save_settings:
+                    export_settings(gado_port=port)
+                return True
+        return False
+    
+    def connect(self):
+        '''
+        Connect to the Gado.
+        
+        If a port is specified in the settings, then try to connect to it
+        Otherwise scan through ports attempting to connect to the Robot
+        '''
+        settings = import_settings()
+        if 'gado_port' in settings:
+            success = self.robot.connect(port)
+            if success:
+                return True
+        return self._connect()
     
     def enumerate_serial_ports(self):
         """ Uses the Win32 registry to return an

@@ -59,18 +59,11 @@ class DBInterface():
         self.db = db
         self.delim = '  '
     
-    def add_artifact_set(self, name, parent):
-        pass
-    
-    def delete_artifact_set(self, name):
-        pass
-    
     def _get_children(self, parent):
         db = self.db
         children_rows = db(db.artifact_sets.parent == parent).select()
         children_final = []
         for child in children_rows:
-            print "iterating on %s with parent %s!" % (child['name'], child['parent'])
             child_dict = dict(name = child['name'],
                               id = child['id'],
                               children = self._get_children(child['id']))
@@ -97,3 +90,8 @@ class DBInterface():
     def add_artifact_set(self, name, parent):
         self.db.artifact_sets.insert(name=name, parent=parent)
         self.db.commit()
+        
+    def delete_artifact_set(self, id):
+        self.db(self.db.artifact_sets.id == id).delete()
+        self.db.commit()
+    
