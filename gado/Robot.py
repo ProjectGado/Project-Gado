@@ -68,13 +68,14 @@ class Robot(object):
             #Open a serial connection to this serial port
             self.serialConnection = serial.Serial(port, self.baudrate, timeout=1)
         except:
-            print "ERROR CONNECTING TO SERIAL PORT: %s" % port
+            print "ERROR CONNECTING TO SERIAL PORT: %s. Error: %s" % (port, sys.exc_info()[0])
             return False
         
         #Delay for 2 seconds because pyserial can't immediately communicate
         time.sleep(2)
         
         if self.serialConnection.isOpen():
+            print "Inside robot connect"
             #Initiate the handshake with the (potential) robot
             self.serialConnection.write(HANDSHAKE)
             

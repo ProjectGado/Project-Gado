@@ -77,11 +77,9 @@ class RobotThread(Thread):
         #exec(cmd)
         self.robot.start()
         
-    def reset():
     def reset(self):
         self.robot.reset()
     
-    def in_pile():
     def in_pile(self):
         self.robot.in_pile()
     
@@ -97,9 +95,7 @@ class GadoSystem():
         self._armPosition = 0
         self._actuatorPosition = 0
         
-        #Start up the threads we'll need for operation
-        self.webCamThread = WebcamThread(self.camera)
-        self.robotThread = RobotThread(self.robot, None)
+        
     
     def updateSettings(self):
         self.robot.updateSettings(**import_settings())
@@ -167,24 +163,27 @@ class GadoSystem():
         #While we're not done with this stack of images
         while not connected:
 
+            #Start up the threads we'll need for operation
+            webCamThread = WebcamThread(self.camera)
+            robotThread = RobotThread(self.robot, None)
 
-
-            self.camera.saveImage("superTest.jpg", self.camera.returnImage())
+            #self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             #self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             
             #Grab out any OCR'able info
             #text = image_to_string(Image.open('superTest.jpg'))
             #print "OCR: %s" % text
-            self.webCamThread.start()
+            webCamThread.start()
             
-            self.robotThread.start()
+            robotThread.start()
+            robotThread.join()
             #Thread for robot operation
             #Grab out any OCR'able info
             #text = image_to_string(Image.open('superTest.jpg'))
             #print "OCR: %s" % text
             
             #Take a picture of the input stack
-            self.robot.start()
+            #self.robot.start()
             
         '''# Sanity check
         if not self.robot.connected():
@@ -217,6 +216,7 @@ class GadoSystem():
             If save_settings is True, then save the port information.
         '''
         for port in self.enumerate_serial_ports():
+            print "Connecting to port: %s" % port
             success = self.robot.connect(port)
             if success:
                 if save_settings:
@@ -233,7 +233,7 @@ class GadoSystem():
         '''
         settings = import_settings()
         if 'gado_port' in settings:
-            success = self.robot.connect(port)
+            success = self.robot.connect(settings['gado_port'])
             if success:
                 return True
         return self._connect()
