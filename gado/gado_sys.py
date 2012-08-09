@@ -10,16 +10,28 @@ import serial
 from gado.functions import *
 import time
 from gado.pytesser import *
+from gado.Webcam import *
+import Queue
 
 class WebcamThread(Thread):
     def __init__(self):
         pass
+    def __init__(self, webcam):
+        self.webcam = webcam
     
+        #Connect the webcam
+        self.webcam.connect()
+        
+        #Call superclass' init function
+        Thread.__init__(self)
+        
     def run(self):
         '''
         Takes a picture of the back of the image
         '''
         self.image = 'output.png'
+        print "In webcam thread, taking picture"
+        self.webcam.saveImage("tttest.jpg", self.webcam.returnImage())
     
     def get_image(self):
         return self.image
@@ -49,15 +61,28 @@ class RobotThread(Thread):
     def __init__(self, robot, action):
         self.robot = robot
         self.action = action
+        
+        #Call superclass' init function
+        Thread.__init__(self)
+        
+        #init the queue so we can receive messages from the GUI thread
+        self.queue = Queue.Queue()
     
     def run():
         cmd = 'self.%s' % self.action
         exec(cmd)
+    #Do a single run on the robot's scanning procedure
+    def run(self):
+        #cmd = 'self.%s' % self.action
+        #exec(cmd)
+        self.robot.start()
         
     def reset():
+    def reset(self):
         self.robot.reset()
     
     def in_pile():
+    def in_pile(self):
         self.robot.in_pile()
     
 
@@ -71,6 +96,10 @@ class GadoSystem():
         #set the settings to the default
         self._armPosition = 0
         self._actuatorPosition = 0
+        
+        #Start up the threads we'll need for operation
+        self.webCamThread = WebcamThread(self.camera)
+        self.robotThread = RobotThread(self.robot, None)
     
     def updateSettings(self):
         self.robot.updateSettings(**import_settings())
@@ -124,6 +153,9 @@ class GadoSystem():
         self.wthread.start()
         self.robot.in_pile()
     
+    def pause(self):
+        pass#self.robotThread.pause()
+    
     def reset(self):
         self.robot.reset()
     
@@ -134,15 +166,26 @@ class GadoSystem():
         
         #While we're not done with this stack of images
         while not connected:
-            # Take a picture of the input stack.
-            # We want to search it for a QR code
-            # OCRing will be taken care of during post processing
+
+
+
             self.camera.saveImage("superTest.jpg", self.camera.returnImage())
+            #self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             
-            #Continue for a single loop through the scanning process
+            #Grab out any OCR'able info
+            #text = image_to_string(Image.open('superTest.jpg'))
+            #print "OCR: %s" % text
+            self.webCamThread.start()
+            
+            self.robotThread.start()
+            #Thread for robot operation
+            #Grab out any OCR'able info
+            #text = image_to_string(Image.open('superTest.jpg'))
+            #print "OCR: %s" % text
             
             #Take a picture of the input stack
             self.robot.start()
+            
         '''# Sanity check
         if not self.robot.connected():
             raise Exception("No robot connected")

@@ -212,6 +212,7 @@ class Robot(object):
     
     #Pause the robot in its current step
     def pause(self):
+        print "I'm paused inside the Robot object"
         pass
     
     #Stop the robot process and reset
