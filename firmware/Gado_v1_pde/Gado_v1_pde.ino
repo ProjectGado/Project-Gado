@@ -39,26 +39,38 @@ int actuator_position_pin = 2;
 int arm_servo_pin = 5;
 
 #define buttonPin A1
+#define ACTUATOR_START 50
+
 const String handshake = "Im a robot!";
 
 void setup() 
 { 
   //Initialize serial control
   Serial.begin(115200);
+  
   //Initilalize the arm servo
   pinMode(arm_servo_pin, OUTPUT);
   arm.attach(arm_servo_pin, servo_min, servo_max);
+  
   //Initialize pump; for a diaphragm pump, these values don't really matter
   pinMode(pump_in_1, OUTPUT);
   pinMode(pump_in_2, OUTPUT);
   pinMode(pump_standy, OUTPUT);
+  
+  //Turn off standby power
   digitalWrite(pump_standy, LOW);
+  
+  //Set orientation settings
   digitalWrite(pump_in_1, HIGH);
   digitalWrite(pump_in_2, LOW);
-  //Shut off the pump if it's on
+  
+  //Shut off the pump
   analogWrite(pump_pwm, 0);  
   
-  analogWrite(actuator_pin, 50);
+  //Move the actuator to the starting position
+  analogWrite(actuator_pin, ACTUATOR_START);
+  
+  //Map degrees to whatever the servo uses
   y = map(0, 0, 180, servo_min, servo_max);
   arm.writeMicroseconds(y);
 } 
@@ -164,6 +176,9 @@ void gotoLevelSense() {
 void lowerAndLift()
 {
   int v = 0;
+  int last_actuator_position = analogRead(actuator_position_pin);
+  int current_actuator_position = last_actuator_position;
+  
   while(1)
   {
     int reading = analogRead(buttonPin);
@@ -173,25 +188,35 @@ void lowerAndLift()
       lastDebounceTime = millis();
     }
     
-    if ((millis() - lastDebounceTime) > debounceDelay)
+    //if ((millis() - lastDebounceTime) > debounceDelay)
+    //{
+    //buttonState = reading;
+    
+    if (reading == 0)
     {
-      buttonState = reading;
+      //get the current reading of the actuator's position
+      current_actuator_position = analogRead(actuator_position_pin);
       
-      if (reading == 0)
+      //Serial.println("New act pos: " + v);
+      if(current_actuator_position == last_actuator_position)
       {
         v = v + 10;
-        //Serial.println("New act pos: " + v);
+        
         analogWrite(actuator_pin, v);
-        delay(50);
       }
-      else if(reading > 0)
-      {
-        //spin forever
-        Serial.println("STOPPP!");
-        analogWrite(actuator_pin, 25);
-        break;
-      }
+      
+      last_actuator_position = current_actuator_position;
+      
+      delay(50);
     }
+    else if(reading > 0 && ((millis() - lastDebounceTime) > debounceDelay))
+    {
+      //spin forever
+      Serial.println("STOPPP!");
+      analogWrite(actuator_pin, ACTUATOR_START);
+      break;
+    }
+    //}
     lastButtonState = reading;
   }
 }

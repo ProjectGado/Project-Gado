@@ -81,20 +81,20 @@ if __name__ == '__main__':
     gado_sys = GadoSystem(db_interface, gado, camera, tk)
     
     #Create the window which will display the autoconnect progress bar
-    #progressBar = ProgressBar(root=tk)
+    progressBar = ProgressBar(root=tk)
     
     # Create and launch the thread which will try to autoconnect to the Gado
-    #connectionThread = AutoConnectThread(gado_sys, progressBar)
-    #connectionThread.start()
+    connectionThread = AutoConnectThread(gado_sys, progressBar)
+    connectionThread.start()
     
     #Display the progress bar for the autoconnection process
-    #progressBar.mainloop()
+    progressBar.mainloop()
     
     #Create the main gui object
     #gui = GadoGui(tk, db_interface, gado_sys)
     
     #We're done autoconnecting, so destroy the progress bar window
-    #progressBar.destroy()
+    progressBar.destroy()
     
     #Launch the main GUI
     #gui.mainloop()

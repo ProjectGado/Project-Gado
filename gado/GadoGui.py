@@ -230,6 +230,7 @@ class GadoGui(Frame):
         for id, indented_name in self.weighted_sets:
             self.set_dropdown.insert('end', indented_name)
     
+    
     def connectToRobot(self):
         success = self.gado_sys.connect()
         if success:

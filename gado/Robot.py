@@ -68,13 +68,14 @@ class Robot(object):
             #Open a serial connection to this serial port
             self.serialConnection = serial.Serial(port, self.baudrate, timeout=1)
         except:
-            print "ERROR CONNECTING TO SERIAL PORT: %s" % port
+            print "ERROR CONNECTING TO SERIAL PORT: %s. Error: %s" % (port, sys.exc_info()[0])
             return False
         
         #Delay for 2 seconds because pyserial can't immediately communicate
         time.sleep(2)
         
         if self.serialConnection.isOpen():
+            print "Inside robot connect"
             #Initiate the handshake with the (potential) robot
             self.serialConnection.write(HANDSHAKE)
             
@@ -171,12 +172,13 @@ class Robot(object):
         #Move to0 input pile
         self._moveArm(self.arm_in_value)
         print "Input pile, taking picture"
+        self._vacuumOn(255)
         time.sleep(5)
         
         #to scanner
         self._moveArm(self.arm_home_value)
         self._moveActuator(self.actuator_home_value)
-        
+        self._vacuumOn(0)
         print "Above scanner"
         time.sleep(5)
         
