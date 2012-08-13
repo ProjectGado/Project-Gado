@@ -12,7 +12,7 @@ class ProgressBar(Frame):
         
         #Create the label
         self.label = Label(self)
-        self.label["text"] = "Trying to find and connect to the Gado..."
+        self.label["text"] = "Detecting and connecting to Gado..."
         self.label.pack()
         
         #Build the progressbar
@@ -40,12 +40,5 @@ class ProgressBar(Frame):
             self.after(100, self.read_bytes)
     
     def stop(self, success):
-        #check to see if we found the robot
-        if success:
-            print "successs!"
-            self.quit()
-            #tkMessageBox.showinfo("Auto Connection", "We found and connected to the Gado!")
-        else:
-            print "fail!"
-            self.quit()
-            #tkMessageBox.showerror("Auto Connection", "We weren't able to find the robot. Try manual configuration")
+        self.quit()
+        self.destroy()

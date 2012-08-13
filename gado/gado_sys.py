@@ -8,10 +8,12 @@ import itertools
 from threading import Thread
 import serial
 from gado.functions import *
-import time
+import time, os
 from gado.pytesser import *
 from gado.Webcam import *
 import Queue
+from gado.gui.ProgressBar import *
+from gado.GadoGui import GadoGui
 
 class WebcamThread(Thread):
     def __init__(self):
@@ -77,29 +79,58 @@ class RobotThread(Thread):
         #exec(cmd)
         self.robot.start()
         
-    def reset():
     def reset(self):
         self.robot.reset()
     
-    def in_pile():
     def in_pile(self):
         self.robot.in_pile()
     
+class AutoConnectThread(Thread):
+    def __init__(self, gado_sys, progressBar):
+        self.gado_sys = gado_sys
+        self.progressBar = progressBar
+        Thread.__init__(self)
+        self.success = False
+    
+    def run(self):
+        self.connected = self.gado_sys.connect()
+        
+        #Stop the progress bar window
+        self.progressBar.stop(self.connected)
+        self.progressBar.destroy()
 
 class GadoSystem():
     
-    def __init__(self, dbi, robot, camera):
+    def __init__(self, dbi, robot, camera, tk, connect_timeout=30, image_path='images', **kargs):
         self.robot = robot
         self.dbi = dbi
         self.camera = camera
+        self.tk = tk
+        self.selected_set = None
+        self.image_path = image_path
         
         #set the settings to the default
         self._armPosition = 0
         self._actuatorPosition = 0
         
-        #Start up the threads we'll need for operation
-        self.webCamThread = WebcamThread(self.camera)
-        self.robotThread = RobotThread(self.robot, None)
+        
+        if not self.robot.connected():
+            progressBar = ProgressBar(root=tk)
+            
+            connectionThread = AutoConnectThread(self, progressBar)
+            connectionThread.start()
+            
+            progressBar.mainloop()
+            
+            if not connectionThread.connected:
+                tkMessageBox.showerror("Auto Connection", "Unable to find robot, please check that is plugged in or consult the manual.")
+                exit()
+        
+        self.gui = GadoGui(self.tk, self.dbi, self)
+        self.gui.mainloop()
+    
+    def set_seletcted_set(self, set_id):
+        self.selected_set = None
     
     def updateSettings(self):
         self.robot.updateSettings(**import_settings())
@@ -159,25 +190,82 @@ class GadoSystem():
     def reset(self):
         self.robot.reset()
     
+    def _sanity_checks(self):
+        _a = 'a'
+        if not self.started:
+            self.started = id(_a)
+        
+        if self.started != id(_a):
+            tkMessageBox.showerror("Initialization Error",
+                "The Robot has already been started")
+            return False
+        
+        if not self.selected_set:
+            tkMessageBox.showerror("Initialization Error",
+                "Please choose a set from the Artifact Set dropdown list.")
+            self.started = False
+            return False
+        
+        if not self.robot.connected():
+            tkMessageBox.showerror("Initialization Error",
+                "Lost connection to the robot, please try restarting.")
+            self.started = False
+            return False
+        self.robot.reset()
+        
+        if not self.scanner.connected():
+            tkMessageBox.showerror("Initialization Error",
+                "Lost connection to the scanner, please try restarting.")
+            self.started = False
+            return False
+        
+        if not self.camera.connected():
+            tkMessageBox.showerror("Initialization Error",
+                "Lost connection to the camera, please try restarting.")
+            self.started = False
+            return False
+        
+        if self.started != id(_a):
+            tkMessageBox.showerror("Initialization Error",
+                "Please only click start once.")
+            return False
+        
+        return True
+        
+    
     def start(self):
+        '''
+        Starts the scanning process for the current in pile
+        '''
+        if not self._sanity_checks():
+            return False
+        
         #The actual looping should be happening here, instead of in Robot.py
         #Robot.py should just run the loop once and all conditions/vars will be stored here
-        connected = False
+        
+        self.camera.saveImage("backside.jpg", self.camera.returnImage())
+        completed = check_for_barcode("backside.jpg")
         
         #While we're not done with this stack of images
-        while not connected:
-
-
-
-            self.camera.saveImage("superTest.jpg", self.camera.returnImage())
+        while not completed:
+            # New Artifact!
+            artifact_id = self.dbi.add_artifact(self.selected_set)
+            
+            
+            # Fix.
+            os.rename('backside.jpg', 'images/backside.jpg')
+            
+            
+            self.robot
+            
             #self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             
             #Grab out any OCR'able info
             #text = image_to_string(Image.open('superTest.jpg'))
             #print "OCR: %s" % text
-            self.webCamThread.start()
+            #self.webCamThread.start()
             
-            self.robotThread.start()
+            #self.robotThread.start()
             #Thread for robot operation
             #Grab out any OCR'able info
             #text = image_to_string(Image.open('superTest.jpg'))
@@ -185,6 +273,9 @@ class GadoSystem():
             
             #Take a picture of the input stack
             self.robot.start()
+            
+            self.camera.saveImage("backside.jpg", self.camera.returnImage())
+            completed = check_for_barcode('backside')
             
         '''# Sanity check
         if not self.robot.connected():
@@ -211,18 +302,7 @@ class GadoSystem():
         pass
         '''
     
-    def _connect(self, save_settings=True):
-        '''
-            Scan through ports attempting to connect to the robot.
-            If save_settings is True, then save the port information.
-        '''
-        for port in self.enumerate_serial_ports():
-            success = self.robot.connect(port)
-            if success:
-                if save_settings:
-                    export_settings(gado_port=port)
-                return True
-        return False
+
     
     def connect(self):
         '''
@@ -233,28 +313,11 @@ class GadoSystem():
         '''
         settings = import_settings()
         if 'gado_port' in settings:
-            success = self.robot.connect(port)
+            success = self.robot.connect(settings['gado_port'])
             if success:
                 return True
-        return self._connect()
-    
-    def enumerate_serial_ports(self):
-        """ Uses the Win32 registry to return an
-            iterator of serial (COM) ports
-            existing on this computer.
-        """
-        path = 'HARDWARE\\DEVICEMAP\\SERIALCOMM'
-        try:
-            key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, path)
-        except WindowsError:
-            raise IterationError
-    
-        for i in itertools.count():
-            try:
-                val = _winreg.EnumValue(key, i)
-                yield str(val[1])
-            except EnvironmentError:
-                break
+        return _connect()
+
     
     def disconnect(self):
         '''
@@ -284,4 +347,37 @@ class GadoSystem():
     
     def _transfer_image(self):
         pass
+
+
     
+def enumerate_serial_ports():
+    """
+    Uses the Win32 registry to return an
+    iterator of serial (COM) ports
+    existing on this computer.
+    """
+    path = 'HARDWARE\\DEVICEMAP\\SERIALCOMM'
+    try:
+        key = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, path)
+    except WindowsError:
+        raise IterationError
+
+    for i in itertools.count():
+        try:
+            val = _winreg.EnumValue(key, i)
+            yield str(val[1])
+        except EnvironmentError:
+            break
+
+def _connect(robot, save_settings=True):
+    '''
+    Scan through ports attempting to connect to the robot.
+    If save_settings is True, then save the port information.
+    '''
+    for port in enumerate_serial_ports():
+        success = robot.connect(port)
+        if success:
+            if save_settings:
+                export_settings(gado_port=port)
+            return True
+    return False

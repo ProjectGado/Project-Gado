@@ -84,6 +84,8 @@ class Robot(object):
             #Read back response (if any) and check to see if it matches the expected value
             response = self.serialConnection.read(100)
             
+            print "response: \"%s\"" % response
+            
             if response == HANDSHAKE_VALUE:
                 return True
         return False
@@ -96,7 +98,7 @@ class Robot(object):
         '''
         Checks to see if the robot is connected
         '''
-        if self.serialConnection.isOpen():
+        if self.serialConnection and self.serialConnection.isOpen():
             self.serialConnection.write(HANDSHAKE)
             
             #Read back response from (tentative) robot
@@ -142,7 +144,7 @@ class Robot(object):
             self.serialConnection.flushInput()
             self.serialConnection.flushOutput()
             self.serialConnection.flush()
-        
+    
     #Reset the robot to the home position
     def reset(self):
         self._moveArm(self.arm_home_value)

@@ -70,11 +70,73 @@ class DBInterface():
             children_final.append(child_dict)
         return children_final
     
+    def _get_recent_parents(self, child_id):
+        db = self.db
+        child = db(db.artifact_sets.id == child_id).select(db.artifact_sets.name, db.artifact_sets.parent).first()
+        child_dict = dict(name = child['name'],
+                          id = child_id,
+                          children = [])
+        if child['parent'] != None:
+            recent_parents = self._get_recent_parents(child['parent'])
+            recent_parents[-1]['children'] = [child_id]
+            recent_parents.append(child_dict)
+            return recent_parents
+        return [child_dict]
+    
+    def _add(self, arr, new):
+        for a in arr:
+            if a['id'] == new['id']:
+                a['children'] = self._merge_arrays(a['children'], new['children'])
+                return
+        arr.append(new)
+    
+    def _merge_recent(self, primary_arr, new_arr):
+        for k in new_arr:
+            self._add(primary_arr, k)
+    
+    
+    def _merge_arrays(self, arr1, arr2):
+        res = arr1[:]
+        for a in arr2:
+            if a not in res:
+                res.append(a)
+        return res
+    
+    def _fix_list(self, arr):
+        arr_final = []
+        for a in arr:
+            children = a['children']
+            kids = []
+            for c in children:
+                for b in arr:
+                    if b['id'] == c:
+                        b['remove'] = True
+                        kids.append(b)
+            a['children'] = kids
+        arr_final = [a for a in arr if not 'remove' in a]
+        return arr_final
+    
     def artifact_set_list(self):
         set_list = self._get_children(None)
         final_set_list = self._build_tuple_list(set_list)
         final_set_list.insert(0,(None,'No parent'))
         return final_set_list
+    
+    def weighted_artifact_set_list(self):
+        raw_set_list = self.artifact_set_list()
+        del raw_set_list[0]
+        
+        recently_used = self.db(self.db.artifacts.id > 0).select(self.db.artifacts.artifact_set, orderby=~self.db.artifacts.id, limitby=(0,10))
+        parents = []
+        for recent in recently_used:
+            new_recent = self._get_recent_parents(recent['artifact_set'])
+            self._merge_recent(parents, new_recent)
+        parent_set_list = self._build_tuple_list(self._fix_list(parents))
+        parent_set_list.insert(0, (None, '---- Recently Used ----'))
+        parent_set_list.append((None, '---- All sets ----'))
+        parent_set_list.extend(raw_set_list)
+        
+        return parent_set_list
     
     def _build_tuple_list(self, set_list, depth=0):
         current_list = []
@@ -95,3 +157,19 @@ class DBInterface():
         self.db(self.db.artifact_sets.id == id).delete()
         self.db.commit()
     
+    
+    def _get_set_name(self, id):
+        '''
+        Concatenates 
+        '''
+        db = self.db
+        row = db(db.artifact_sets.id == id).select().first()
+        if row['parent']:
+            name = '%s%s' % (self._get_set_name(row['parent']), row['name'])
+            return name
+        return row['name']
+    
+    def add_artifact(self, artifact_set):
+        incr = self.db(self.db.artifacts.artifact_set == artifact_set).count() + 1
+        name = '%s%s' % (self._get_set_name(artifact_set), incr)
+        return self.db.artifacts.insert(artifact_set = artifact_set, name = name, set_incrementer=incr)
