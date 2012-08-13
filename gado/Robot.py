@@ -170,12 +170,13 @@ class Robot(object):
         #Move to0 input pile
         self._moveArm(self.arm_in_value)
         print "Input pile, taking picture"
+        self._vacuumOn(255)
         time.sleep(5)
         
         #to scanner
         self._moveArm(self.arm_home_value)
         self._moveActuator(self.actuator_home_value)
-        
+        self._vacuumOn(0)
         print "Above scanner"
         time.sleep(5)
         

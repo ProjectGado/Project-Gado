@@ -218,6 +218,7 @@ class GadoGui(Frame):
     def _populate_set_dropdown(self):
         pass
     
+    
     def connectToRobot(self):
         success = self.gado_sys.connect()
         if success:
