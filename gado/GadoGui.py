@@ -162,7 +162,7 @@ class GadoGui(Frame):
         artifactSetLabel.grid(row=3, column=0, sticky=W, padx=10, pady=5)
         
         #Create dropdown for selecting an artifact set
-        set_dropdown = Pmw.ComboBox(self)
+        set_dropdown = Pmw.ComboBox(self, selectioncommand=self.set_selected_set)
         set_dropdown.grid(row=4, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         self.set_dropdown = set_dropdown
         self._populate_set_dropdown()
@@ -172,7 +172,13 @@ class GadoGui(Frame):
         new_set_button["text"] = "New Artifact Set"
         new_set_button["command"] = self.manage_sets.show
         new_set_button.grid(row=4, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
-
+    
+    def set_selected_set(self, a):
+        idx = self.set_dropdown.curselection()[0]
+        self.selected_set = self.weighted_sets[int(idx)][0]
+        if not self.selected_set:
+            tkMessageBox.showerror("Invalid Set Selection", "Please select a valid set, or create a new one.")
+    
     def createControlWidgets(self):
         #Create label
         self.controlLabel = Label(self)
@@ -215,8 +221,14 @@ class GadoGui(Frame):
     #####                           FUNCTION WRAPPERS                           #####
     #################################################################################
     
+    def _refresh(self):
+        self.set_dropdown.delete(0, 'end')
+        self._populate_set_dropdown()
+    
     def _populate_set_dropdown(self):
-        pass
+        self.weighted_sets = self.dbi.weighted_artifact_set_list()
+        for id, indented_name in self.weighted_sets:
+            self.set_dropdown.insert('end', indented_name)
     
     
     def connectToRobot(self):

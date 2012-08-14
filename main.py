@@ -23,20 +23,6 @@ from gado.ProgressBar import *
 import threading
 from gado.Webcam import *
 
-class AutoConnectThread(threading.Thread):
-    
-    def __init__(self, gado_sys, progressBar):
-        self.gado_sys = gado_sys
-        self.progressBar = progressBar
-        
-        threading.Thread.__init__(self)
-        
-    def run(self):
-        #Try and connect to the Gado (scrolls through all available serial ports)
-        connected = self.gado_sys.connect()
-        
-        #Stop the progress bar window
-        self.progressBar.stop(connected)
         
 if __name__ == '__main__':
     print "Initializing Gado Robot Management Interface"
@@ -51,16 +37,48 @@ if __name__ == '__main__':
     
     # Get access to the DB
     db = DBFactory(**settings).get_db()
+    
+    
+    '''
+    a
+      b
+        c
+        d
+      e
+        f
+    g
+      h
+        i
+    '''
+    db(db.artifacts.id > 0).delete()
+    db(db.artifact_sets.id > 0).delete()
+    
+    a_id = db.artifact_sets.insert(name='a', parent=None)
+    b_id = db.artifact_sets.insert(name='b', parent=a_id)
+    c_id = db.artifact_sets.insert(name='c', parent=b_id)
+    d_id = db.artifact_sets.insert(name='d', parent=b_id)
+    e_id = db.artifact_sets.insert(name='e', parent=a_id)
+    f_id = db.artifact_sets.insert(name='f', parent=e_id)
+    g_id = db.artifact_sets.insert(name='g', parent=None)
+    h_id = db.artifact_sets.insert(name='h', parent=g_id)
+    i_id = db.artifact_sets.insert(name='i', parent=h_id)
+    
+    db.artifacts.insert(artifact_set=c_id)
+    db.artifacts.insert(artifact_set=d_id)
+    db.artifacts.insert(artifact_set=i_id)
+    db.artifacts.insert(artifact_set=f_id)
+    
+    
     db_interface = DBInterface(db)
     
     #Create instance of robot
     gado = Robot(**settings)
     
-    #Start up the Gado System for management
-    gado_sys = GadoSystem(db_interface, gado, camera)
-    
     #Create root of application
     tk = Tk()
+    
+    #Start up the Gado System for management
+    gado_sys = GadoSystem(db_interface, gado, camera, tk)
     
     #Create the window which will display the autoconnect progress bar
     progressBar = ProgressBar(root=tk)
@@ -73,13 +91,13 @@ if __name__ == '__main__':
     progressBar.mainloop()
     
     #Create the main gui object
-    gui = GadoGui(tk, db_interface, gado_sys)
+    #gui = GadoGui(tk, db_interface, gado_sys)
     
     #We're done autoconnecting, so destroy the progress bar window
     progressBar.destroy()
     
     #Launch the main GUI
-    gui.mainloop()
+    #gui.mainloop()
     
     #When we exit, destroy the root of the application
     tk.destroy()

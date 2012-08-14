@@ -1,4 +1,4 @@
-import json
+import json, random
 
 def import_settings():
     # image_path
@@ -26,3 +26,14 @@ def export_settings(**kwargs):
     
     #Close up file connection
     FH.close()
+
+def check_for_barcode(image_path):
+    '''
+    Checks the image for a barcode.
+    
+    Returns True if a barcode is found, otherwise False
+    '''
+    
+    # TODO
+    
+    return random.random() > 0.9
