@@ -95,7 +95,7 @@ class Scanner():
                 print "File path does not exist, please check again..."
                 
         except:
-            print "Error while transferring image from scanner to computer...\nError: %s" % (sys.exc_info()[0])
+            print "Error while transferring image from scanner to computer...\nError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
     
         return False
     
