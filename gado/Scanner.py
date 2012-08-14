@@ -27,7 +27,7 @@ class Scanner():
         self.wiaObject = win32com.client.Dispatch(COMMON_DIALOG)
         
         self.device = None
-        self.scanDpi = None
+        self.scanDpi = DEFAULT_DPI
         self.scannerName = None
         
         #Try and push the settings from the conf file
@@ -36,10 +36,7 @@ class Scanner():
             self.scannerName = kwargs['scanner_name']
         except:
             print "Error while instantiating scanner with passed settings...\nError: %s" % (sys.exc_info()[0])
-            
-        #If we have it, set the DPI specified in the configuration file
-        #if self.scanDpi is not None:
-        #    self._setDPI(self.scanDpi)
+        
             
     ######  IT SEEMS LIKE THIS FUNCTION DOESN'T ACTUALLY DO ANYTHING... MIGHT CONSIDER TAKING IT OUT #####        
             
@@ -71,6 +68,10 @@ class Scanner():
     #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)
     def scanImage(self, dirName, imageName):
         
+        #If the DPI hasn't yet been set, then set it
+        if self.scanDpi is None:
+            self.setDPI(DEFAULT_DPI)
+            
         try:
             #Transfer the raw image data from the scanner to the local computer
             image = self.device.Items[self.device.Items.count].Transfer(WIA_IMG_FORMAT_PNG)
@@ -104,8 +105,6 @@ class Scanner():
     def setDPI(self, dpiValue):
         
         try:
-            if self.device is not None:
-                self.scanDpi = dpiValue
                 
                 #Find each item for the connected device
                 for item in self.device.Items:
@@ -161,6 +160,8 @@ class Scanner():
                         #Found our scanner, let's connect to it
                         self.device = dev.Connect()
                         
+                        self.setDPI(self.scanDpi)
+                        
                         return True
                     
         return False
@@ -173,6 +174,8 @@ class Scanner():
         
         try:
             self.device = self.wiaObject.ShowSelectDevice()
+            
+            self.setDPI(self.scanDpi)
             
             return True
         
