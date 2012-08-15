@@ -1,3 +1,4 @@
+from __future__ import division
 import win32com.client
 import os
 import sys
@@ -10,8 +11,12 @@ WIA_HORIZONTAL_RESOLUTION = "Horizontal Resolution"
 WIA_VERTICAL_RESOLUTION = "Vertical Resolution"
 WIA_HORIZONTAL_EXTENT = "Horizontal Extent"
 WIA_VERTICAL_EXTENT = "Vertical Extent"
+WIA_HORIZONTAL_BED_SIZE = "Horizontal Bed Size"
+WIA_VERTICAL_BED_SIZE = "Vertical Bed Size"
 DEVICE_MANAGER = "WIA.DeviceManager"
 COMMON_DIALOG = "WIA.CommonDialog"
+SCALE_FACTOR = 1000
+DEFAULT_DPI = 600
 
 class Scanner():
     
@@ -20,8 +25,9 @@ class Scanner():
         #Init all of the scanner objects
         self.deviceManager = win32com.client.Dispatch(DEVICE_MANAGER)
         self.wiaObject = win32com.client.Dispatch(COMMON_DIALOG)
+        
         self.device = None
-        self.scanDpi = None
+        self.scanDpi = DEFAULT_DPI
         self.scannerName = None
         
         #Try and push the settings from the conf file
@@ -30,22 +36,28 @@ class Scanner():
             self.scannerName = kwargs['scanner_name']
         except:
             print "Error while instantiating scanner with passed settings...\nError: %s" % (sys.exc_info()[0])
+        
             
-        #If we have it, set the DPI specified in the configuration file
-        if self.scanDpi is not None:
-            self._setDPI(self.scanDpi)
+    ######  IT SEEMS LIKE THIS FUNCTION DOESN'T ACTUALLY DO ANYTHING... MIGHT CONSIDER TAKING IT OUT #####        
             
     #Tell the scanner to scan a copy of whatever is currently on the scanner surface
     #This scan is stored on the scanner until transferImage is called, telling it where to save
     #on the local machine
-    def scan(self):
+    def scan(self, dirName, imageName):
+        
+        transferred = True
         
         try:
             for command in self.device.Commands:
-                if command.CommandID == WIA_COMMAND_TAKE_PICTURE:    
+                print "Command: %s" % command.Name
+                if command.CommandID == WIA_COMMAND_TAKE_PICTURE:
+                    print "here!"
                     self.device.ExecuteCommand(WIA_COMMAND_TAKE_PICTURE)
-            
-            return True
+                    print "Told scanner to scan"
+                    #Transfer the image
+                    #transferred = self._transferImage(dirName, imageName)
+                    
+            return transferred
         
         except:
             print "Error trying to scan image...\nError: %s" % str(sys.exc_info())
@@ -54,8 +66,12 @@ class Scanner():
     
     #Take the last image scanned on the scanner and transfer it to the local computer
     #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)
-    def transferImage(self, dirName, imageName):
+    def scanImage(self, dirName, imageName):
         
+        #If the DPI hasn't yet been set, then set it
+        if self.scanDpi is None:
+            self.setDPI(DEFAULT_DPI)
+            
         try:
             #Transfer the raw image data from the scanner to the local computer
             image = self.device.Items[self.device.Items.count].Transfer(WIA_IMG_FORMAT_PNG)
@@ -73,44 +89,59 @@ class Scanner():
                 
                 #Actually save the image
                 image.SaveFile(imageName)
+                
+                return True
+            
             else:
                 print "File path does not exist, please check again..."
                 
         except:
-            print "Error while transferring image from scanner to computer...\nError: %s" % (sys.exc_info()[0])
+            print "Error while transferring image from scanner to computer...\nError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
+    
+        return False
     
     #Pass in a dpi value to explicitly set the scanner to
     #This value is also saved in the gado.conf file for future use
-    def _setDPI(self, dpiValue):
+    def setDPI(self, dpiValue):
         
-        if self.device is not None:
-            #Find each item for the connected device
-            for item in self.device.Items:
+        try:
                 
-                #Find each property for each item
-                for prop in item.Properties:
+                #Find each item for the connected device
+                for item in self.device.Items:
                     
-                    #Change both the horizontal and vertical dpi
-                    if prop.Name == WIA_HORIZONTAL_RESOLUTION or prop.Name == WIA_VERTICAL_RESOLUTION:
+                    #Find each property for each item
+                    for prop in item.Properties:
                         
-                        #Changing dpi settings, see if we have a valid dpi property
-                        if self.scanDpi is not None:
-                            prop.Value = self.scanDpi
-                        else:
-                            #Setting to default, 600 DPI
-                            prop.Value = '600'
+                        #Change both the horizontal and vertical dpi
+                        if prop.Name == WIA_HORIZONTAL_RESOLUTION or prop.Name == WIA_VERTICAL_RESOLUTION:
                             
-                    #Change the horizontal and vertical extents (size) so we get the entire surface
-                    #of the scanner scanned instead of just a portion
-                    if prop.Name == WIA_HORIZONTAL_EXTENT:
-                        
-                        #HARDCODED FOR NOW, IN FUTURE GRAB MAX_BED_SIZE AND CALCULATE THIS PROPERTY
-                        prop.Value = '5100'
-                        
-                    if prop.Name == WIA_VERTICAL_EXTENT:
-                        
-                        #HARDCODED FOR NOW, IN FUTURE GRAB MAX_BED_SIZE AND CALCULATE THIS PROPERTY
-                        prop.Value = '6600'
+                            #Changing dpi settings, see if we have a valid dpi property
+                            if self.scanDpi is not None:
+                                prop.Value = self.scanDpi
+                                
+                            else:
+                                #Setting to default, 600 DPI
+                                prop.Value = DEFAULT_DPI
+                                
+                        #Change the horizontal and vertical extents (size) so we get the entire surface
+                        #of the scanner scanned instead of just a portion
+                        if prop.Name == WIA_HORIZONTAL_EXTENT:
+                            
+                            horBedSize = self._getHorizontalBedSize()
+                            
+                            horizontalExtent = int((horBedSize / SCALE_FACTOR) * float(dpiValue))
+                            
+                            prop.Value = horizontalExtent
+                            
+                        if prop.Name == WIA_VERTICAL_EXTENT:
+                            
+                            vertBedSize = self._getVerticalBedSize()
+                            
+                            verticalExtent = int((vertBedSize / SCALE_FACTOR) * float(dpiValue))
+                            
+                            prop.Value = verticalExtent
+        except:
+            print "Error trying to set dpi to value: %s...\nError: %s" % (dpiValue, sys.exc_info()[0])
                 
     
     #Using the scannerName property in gado.conf, try and connect to the scanner
@@ -129,6 +160,8 @@ class Scanner():
                         #Found our scanner, let's connect to it
                         self.device = dev.Connect()
                         
+                        self.setDPI(self.scanDpi)
+                        
                         return True
                     
         return False
@@ -142,12 +175,36 @@ class Scanner():
         try:
             self.device = self.wiaObject.ShowSelectDevice()
             
+            self.setDPI(self.scanDpi)
+            
             return True
         
         except:
             print "Failed to select a device, you should make sure everything is connected...\nError: %s" % (sys.exc_info()[0])
             
             return False
+    
+    #Get the horizontal bed size (Used to calculate extents regarding setting custom DPIs)
+    def _getHorizontalBedSize(self):
+        
+        if self.device is not None:
+            
+            for prop in self.device.Properties:
+                if prop.Name == WIA_HORIZONTAL_BED_SIZE:
+                    return prop.Value
+                
+        return -1
+    
+    #Get the vertical bed size (Used to calculate extents regarding setting custom DPIs)
+    def _getVerticalBedSize(self):
+        
+        if self.device is not None:
+            
+            for prop in self.device.Properties:
+                if prop.Name == WIA_VERTICAL_BED_SIZE:
+                    return prop.Value
+                
+        return -1
     
     #Enumerate through each item in the connected device's heirarchy and dump out all properties
     #that are found
@@ -164,12 +221,24 @@ class Scanner():
         print "\n\n"
         
         #Dump all commands for connected device (if it exists)
-        if self.device is not None:
+        if self.device is not None and len(self.device.Commands) > 1:
             print "Device Specific Commands:\n"
             
             for command in self.device.Commands:
-                print "%s" % (command.Description)
+                print "%s -> %s" % (command.CommandID, command.Description)
         
+            print "\n\n"
+            
+        #Dump all device specific properties
+        if self.device is not None:
+            print "Device Specific Properties:\n"
+            
+            for prop in self.device.Properties:
+                if prop.isReadOnly:
+                    print "%s -> %s (Read Only)" % (prop.Name, prop.Value)
+                else:
+                    print "%s -> %s (Read/Write)" % (prop.Name, prop.Value)
+                
             print "\n\n"
             
         #Dump all items and their properties
