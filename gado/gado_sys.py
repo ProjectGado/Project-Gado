@@ -14,6 +14,7 @@ from gado.Webcam import *
 import Queue
 from gado.gui.ProgressBar import *
 from gado.GadoGui import GadoGui
+from gado.Scanner import Scanner
 
 class WebcamThread(Thread):
     def __init__(self):
@@ -38,15 +39,30 @@ class WebcamThread(Thread):
     def get_image(self):
         return self.image
 
+#FUCK ALL OF THIS. SCANNER DOES NOT PLAY WELL WITH THREADS, WE'LL DO IT SERIAL.
 class ScannerThread(Thread):
-    def __init__(self, funct):
-        self.funct
-        pass
-    
+    def __init__(self, scanner):
+        
+        self.scanner = Scanner()
+        
+        #Init the superclass
+        Thread.__init__(self)
+        
     def run(self):
-        cmd = 'self.%s' % self.funct
-        exec("cmd")
-    
+        
+        #self.scanner.connectToScannerGui()
+        #self.scanner.setDPI("300")
+        #newScanner = Scanner()
+        print "before call in thread"
+        self.scanner.connectToScannerGui()
+        time.sleep(2)
+        self.scanner.scanImage("C:\Users\Robert\Downloads", "scannedImage.png")
+        print "after call in thread"
+        '''
+        self.scanner.scan("C:\Users\Robert", "newScan.png")
+        self.scanner.scanImage("C:\Users\Robert", "newScan2.png")
+        print "in the damn scanner thread, what's wrong?"
+        '''
     def initialize(self):
         '''
         "Warms up" the scanner for scanning
@@ -60,9 +76,9 @@ class ScannerThread(Thread):
         pass
 
 class RobotThread(Thread):
-    def __init__(self, robot, action):
+    def __init__(self, robot):
         self.robot = robot
-        self.action = action
+        #self.action = action
         
         #Call superclass' init function
         Thread.__init__(self)
@@ -101,8 +117,9 @@ class AutoConnectThread(Thread):
 
 class GadoSystem():
     
-    def __init__(self, dbi, robot, camera, tk, connect_timeout=30, image_path='images', **kargs):
+    def __init__(self, dbi, robot, camera, tk, scanner, connect_timeout=30, image_path='images', **kargs):
         self.robot = robot
+        self.scanner = scanner
         self.dbi = dbi
         self.camera = camera
         self.tk = tk
@@ -237,26 +254,36 @@ class GadoSystem():
         '''
         Starts the scanning process for the current in pile
         '''
-        if not self._sanity_checks():
-            return False
+        #Come back and make the sanity checks real
+        #if not self._sanity_checks():
+        #    return False
         
         #The actual looping should be happening here, instead of in Robot.py
         #Robot.py should just run the loop once and all conditions/vars will be stored here
-        
+        self.robotThread = RobotThread(self.robot)
         self.camera.saveImage("backside.jpg", self.camera.returnImage())
-        completed = check_for_barcode("backside.jpg")
+        completed = False
+        #completed = check_for_barcode("backside.jpg")
         
+        print "before scan"
+        #progress = ProgressBar(root=self.tk)
+        #progress.mainloop()
+        self.scanner.scanImage("C:\Users\Robert", "newScan.png")
+        print "after scan"
+        #scannerThread.join()
+        #time.sleep(30)
+        self.gui.changeScannedImage("C:\\Users\\Robert\\newScan.png")
         #While we're not done with this stack of images
         while not completed:
             # New Artifact!
-            artifact_id = self.dbi.add_artifact(self.selected_set)
-            
+            #artifact_id = self.dbi.add_artifact(self.selected_set)
+            #self.robotThread.start()
             
             # Fix.
-            os.rename('backside.jpg', 'images/backside.jpg')
+            #os.rename('backside.jpg', 'images/backside.jpg')
             
             
-            self.robot
+            #self.robot
             
             #self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             
@@ -272,11 +299,13 @@ class GadoSystem():
             #print "OCR: %s" % text
             
             #Take a picture of the input stack
-            self.robot.start()
+            #self.robot.start()
             
-            self.camera.saveImage("backside.jpg", self.camera.returnImage())
-            completed = check_for_barcode('backside')
             
+            #self.camera.saveImage("backside.jpg", self.camera.returnImage())
+            #completed = check_for_barcode('backside')
+            completed = True
+        print "Done with robot loop" 
         '''# Sanity check
         if not self.robot.connected():
             raise Exception("No robot connected")
@@ -316,7 +345,7 @@ class GadoSystem():
             success = self.robot.connect(settings['gado_port'])
             if success:
                 return True
-        return _connect()
+        return _connect(self.robot)
 
     
     def disconnect(self):
