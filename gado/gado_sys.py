@@ -404,6 +404,7 @@ def _connect(robot, save_settings=True):
     If save_settings is True, then save the port information.
     '''
     for port in enumerate_serial_ports():
+        print "attempting port %s" % port
         success = robot.connect(port)
         if success:
             if save_settings:

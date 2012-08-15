@@ -20,7 +20,6 @@ from gado.gado_sys import GadoSystem
 from gado.db import DBFactory, DBInterface
 from gado.Scanner import Scanner
 from Tkinter import Tk
-from gado.ProgressBar import *
 import threading
 from gado.Webcam import *
 
