@@ -1,12 +1,16 @@
 import json, os
 
 def import_settings():
-    # image_path
-    FH = open('gado.conf')
-    conf = FH.read()
-    FH.close()
-    settings = json.loads(conf)
-    return settings
+    try:
+        # image_path
+        FH = open('gado.conf')
+        conf = FH.read()
+        FH.close()
+        settings = json.loads(conf)
+        return settings
+    except:
+        return dict()
+        
 
 #Pass in a dictionary containing the values being changed
 #Can add in new key value pairs also

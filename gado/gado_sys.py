@@ -14,6 +14,7 @@ from gado.Webcam import *
 import Queue
 from gado.gui.ProgressBar import *
 from gado.GadoGui import GadoGui
+from gado.Webcam import Webcam
 
 class WebcamThread(Thread):
     def __init__(self):
@@ -101,13 +102,14 @@ class AutoConnectThread(Thread):
 
 class GadoSystem():
     
-    def __init__(self, dbi, robot, camera, tk, connect_timeout=30, image_path='images', **kargs):
+    def __init__(self, dbi, robot, tk, connect_timeout=30, image_path='images', **kargs):
         self.robot = robot
         self.dbi = dbi
-        self.camera = camera
         self.tk = tk
         self.selected_set = None
         self.image_path = image_path
+        
+        self.webcam = Webcam()
         
         #set the settings to the default
         self._armPosition = 0
@@ -243,7 +245,8 @@ class GadoSystem():
         #The actual looping should be happening here, instead of in Robot.py
         #Robot.py should just run the loop once and all conditions/vars will be stored here
         
-        self.camera.saveImage("backside.jpg", self.camera.returnImage())
+        
+        self.webcam.savePicture("backside.jpg")
         completed = check_for_barcode("backside.jpg")
         
         #While we're not done with this stack of images
@@ -254,9 +257,6 @@ class GadoSystem():
             
             # Fix.
             os.rename('backside.jpg', 'images/backside.jpg')
-            
-            
-            self.robot
             
             #self.camera.saveImage("superTest.jpg", self.camera.returnImage())
             
@@ -274,7 +274,7 @@ class GadoSystem():
             #Take a picture of the input stack
             self.robot.start()
             
-            self.camera.saveImage("backside.jpg", self.camera.returnImage())
+            self.webcam.savePicture("backside.jpg")
             completed = check_for_barcode('backside')
             
         '''# Sanity check
