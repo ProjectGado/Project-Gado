@@ -19,7 +19,6 @@ from gado.Robot import Robot
 from gado.gado_sys import GadoSystem
 from gado.db import DBFactory, DBInterface
 from Tkinter import Tk
-from gado.ProgressBar import *
 import threading
 from gado.Webcam import *
 

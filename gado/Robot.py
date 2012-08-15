@@ -68,6 +68,7 @@ class Robot(object):
             #Open a serial connection to this serial port
             self.serialConnection = serial.Serial(port, self.baudrate, timeout=1)
         except:
+            #raise
             print "ERROR CONNECTING TO SERIAL PORT: %s. Error: %s" % (port, sys.exc_info()[0])
             return False
         
