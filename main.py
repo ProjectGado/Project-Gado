@@ -18,6 +18,7 @@ from gado.GadoGui import GadoGui
 from gado.Robot import Robot
 from gado.gado_sys import GadoSystem
 from gado.db import DBFactory, DBInterface
+from gado.Scanner import Scanner
 from Tkinter import Tk
 from gado.ProgressBar import *
 import threading
@@ -29,6 +30,7 @@ if __name__ == '__main__':
     
     #Test picture taking
     camera = Webcam()
+    
     print "Connected to webcam: %s" % str(camera.connect())
     #camera.saveImage("superTest.jpg", camera.returnImage())
     
@@ -63,22 +65,31 @@ if __name__ == '__main__':
     h_id = db.artifact_sets.insert(name='h', parent=g_id)
     i_id = db.artifact_sets.insert(name='i', parent=h_id)
     
+    '''
     db.artifacts.insert(artifact_set=c_id)
     db.artifacts.insert(artifact_set=d_id)
     db.artifacts.insert(artifact_set=i_id)
     db.artifacts.insert(artifact_set=f_id)
-    
+    '''
     
     db_interface = DBInterface(db)
     
     #Create instance of robot
     gado = Robot(**settings)
     
+    #Create instance of the Scanner object
+    scanner = Scanner(**settings)
+    #Perhaps move this connection stuff elsewhere...
+    success = scanner.connectToScannerGui()
+    #scanner.setDPI("600")
+    #scanner.scanImage("C:\Users\Robert\Downloads", "scannedImage.png")
+    #print "Scanner found: %s" % success
+    
     #Create root of application
     tk = Tk()
     
     #Start up the Gado System for management
-    gado_sys = GadoSystem(db_interface, gado, camera, tk)
+    gado_sys = GadoSystem(db_interface, gado, camera, tk, scanner)
     
     #Create the window which will display the autoconnect progress bar
     progressBar = ProgressBar(root=tk)
