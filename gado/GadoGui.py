@@ -21,6 +21,9 @@ class GadoGui(Frame):
     global frontImage
     global backImage
     
+    global frontImageLabel
+    global backImageLabel
+    
     def _demo(meter, value):
         meter.set(value)
         if value < 1.0:
@@ -230,23 +233,27 @@ class GadoGui(Frame):
         self.scannerLabel["text"] = "Scanner Image:"
         self.scannerLabel.grid(row=2, column=0, sticky=W, padx=10, pady=5)
         
-        image = Image.open("C:\\Users\\Robert\\test.png")
+        self.webCamLabel = Label(self)
+        self.webCamLabel["text"] = "Webcam Image:"
+        self.webCamLabel.grid(row=2, column=2, sticky=W, padx=10, pady=5)
+        
+        image = Image.open("test.jpg")
         image.thumbnail((500, 500), Image.ANTIALIAS)
         
-        image2 = Image.open("C:\\Users\\Robert\\test.bmp")
+        image2 = Image.open("test.jpg")
         image2.thumbnail((500,500), Image.ANTIALIAS)
         #image = image.resize((500, 500), Image.ANTIALIAS)
         
         self.frontImage = ImageTk.PhotoImage(image)
         self.backImage = ImageTk.PhotoImage(image2)
         
-        imgLabel = Label(self, image=self.frontImage)
-        imgLabel.photo = self.frontImage
-        imgLabel.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        self.frontImageLabel = Label(self, image=self.frontImage)
+        self.frontImageLabel.photo = self.frontImage
+        self.frontImageLabel.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         
-        imgLabel2 = Label(self, image=self.backImage)
-        imgLabel2.photo = self.backImage
-        imgLabel2.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
+        self.backImageLabel = Label(self, image=self.backImage)
+        self.backImageLabel.photo = self.backImage
+        self.backImageLabel.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
         
         #canvas = Canvas(self, bg="black", width=self.frontImage.width(), height=self.frontImage.height())
         #grid(row=10, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
@@ -292,7 +299,6 @@ class GadoGui(Frame):
     def startRobot(self):
         #Function call to start robot's operation
         print "Starting robot..."
-        
         #self.gado.lowerAndLiftInternal()
         #self.gado.sendRawActuatorWithoutBlocking(200)
         self.gado_sys.start()
@@ -314,3 +320,33 @@ class GadoGui(Frame):
         #Function call to reset the robot's operations
         print "Restarting robot..."
         self.gado_sys.reset()
+        
+    #Image transferring functions
+    
+    def changeScannedImage(self, imagePath):
+        #Open image from passed path and resize it (preserving ratio) to fit in GUI
+        try:
+            image = Image.open(imagePath)
+            image.thumbnail((500, 500), Image.ANTIALIAS)
+            
+            self.frontImage = ImageTk.PhotoImage(image)
+            
+            self.frontImageLabel = Label(self, image=self.frontImage)
+            self.frontImageLabel.photo = self.frontImage
+            self.frontImageLabel.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+            
+        except:
+            print "Error updating scanner image in gui thread..."
+        
+    def changeWebcamImage(self, imagePath):
+        try:
+            image = Image.open(imagePath)
+            image.thumbnail((500,500), Image.ANTIALIAS)
+            
+            self.backImage = ImageTk.PhotoImage(image)
+            
+            self.backImageLabel = Label(self, image=self.backImage)
+            self.backImageLabel.photo = self.backImage
+            self.backImageLabel.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
+        except:
+            print "Error updating webcam image in gui thread..."

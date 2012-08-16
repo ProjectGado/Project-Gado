@@ -18,8 +18,10 @@ from gado.GadoGui import GadoGui
 from gado.Robot import Robot
 from gado.gado_sys import GadoSystem
 from gado.db import DBFactory, DBInterface
+from gado.Scanner import Scanner
 from Tkinter import Tk
 import threading
+from gado.Webcam import *
 
 def create_dummy_artifact_sets(db, clear=True):
     '''
@@ -68,30 +70,19 @@ if __name__ == '__main__':
     #Create instance of robot
     gado = Robot(**settings)
     
+    #Create instance of the Scanner object
+    scanner = Scanner(**settings)
+    #Perhaps move this connection stuff elsewhere...
+    success = scanner.connectToScannerGui()
+    #scanner.setDPI("600")
+    #scanner.scanImage("C:\Users\Robert\Downloads", "scannedImage.png")
+    #print "Scanner found: %s" % success
+    
     #Create root of application
     tk = Tk()
     
     #Start up the Gado System for management
-    gado_sys = GadoSystem(db_interface, gado, tk)
-    
-    #Create the window which will display the autoconnect progress bar
-    progressBar = ProgressBar(root=tk)
-    
-    # Create and launch the thread which will try to autoconnect to the Gado
-    connectionThread = AutoConnectThread(gado_sys, progressBar)
-    connectionThread.start()
-    
-    #Display the progress bar for the autoconnection process
-    progressBar.mainloop()
-    
-    #Create the main gui object
-    #gui = GadoGui(tk, db_interface, gado_sys)
-    
-    #We're done autoconnecting, so destroy the progress bar window
-    progressBar.destroy()
-    
-    #Launch the main GUI
-    #gui.mainloop()
+    gado_sys = GadoSystem(db_interface, gado, tk, scanner)
     
     #When we exit, destroy the root of the application
     tk.destroy()

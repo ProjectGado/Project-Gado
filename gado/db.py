@@ -170,6 +170,15 @@ class DBInterface():
         return row['name']
     
     def add_artifact(self, artifact_set):
-        incr = self.db(self.db.artifacts.artifact_set == artifact_set).count() + 1
-        name = '%s%s' % (self._get_set_name(artifact_set), incr)
+        # these are close to valid
+        #incr = self.db(self.db.artifacts.artifact_set == artifact_set).count() + 1
+        #name = '%s%s' % (self._get_set_name(artifact_set), incr)
+        incr = 1
+        name = 'hey there'
         return self.db.artifacts.insert(artifact_set = artifact_set, name = name, set_incrementer=incr)
+    
+    def add_image(self, artifact, path, front):
+        db = self.db
+        incr = 1
+        name = 'hey'
+        return db.images.insert(artifact=artifact, path=path, front=front, artifact_incrementer=incr, name=name)
