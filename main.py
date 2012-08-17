@@ -13,77 +13,61 @@ A few definitions:
    of artifacts are loaded into the 'in' tray, they are all
    considered to be a part of the same 'artifact set'
 '''
-from gado.functions import import_settings
 from gado.GadoGui import GadoGui
-from gado.Robot import Robot
 from gado.gado_sys import GadoSystem
-from gado.db import DBFactory, DBInterface
-from gado.Scanner import Scanner
 from Tkinter import Tk
-import threading
-from gado.Webcam import *
+from threading import Thread, Lock
+from Queue import Queue
 
-def create_dummy_artifact_sets(db, clear=True):
-    '''
-    a
-      b
-        c
-        d
-      e
-        f
-    g
-      h
-        i
-    '''
-    
-    if clear:
-        db(db.artifacts.id > 0).delete()
-        db(db.artifact_sets.id > 0).delete()
+class GuiThread(Thread):
+    def __init__(self, tk, q, l):
+        self.tk = tk
+        self.q = q
+        self.l = l
+        print "GuiThread\tcreating the gui"
+        self.gui = GadoGui(tk, q, l)
+        Thread.__init__(self)
         
-    a_id = db.artifact_sets.insert(name='a', parent=None)
-    b_id = db.artifact_sets.insert(name='b', parent=a_id)
-    c_id = db.artifact_sets.insert(name='c', parent=b_id)
-    d_id = db.artifact_sets.insert(name='d', parent=b_id)
-    e_id = db.artifact_sets.insert(name='e', parent=a_id)
-    f_id = db.artifact_sets.insert(name='f', parent=e_id)
-    g_id = db.artifact_sets.insert(name='g', parent=None)
-    h_id = db.artifact_sets.insert(name='h', parent=g_id)
-    i_id = db.artifact_sets.insert(name='i', parent=h_id)
+    def run(self):
+        print "GuiThread\tloading GUI elements"
+        self.gui.load()
+        print "GuiThread\tcalling tk.mainloop"
+        self.tk.mainloop()
+        print "GuiThread\tcalling finished tk.mainloop"
+        #self.gui.mainloop()
+        exit()
+
+class LogicThread(Thread):
+    def __init__(self, q, l):
+        self.q = q
+        self.l = l
+        print "LogicThread\tintializing GadoSystem"
+        self.gado_sys = GadoSystem(q, l)
+        print "LogicThread\tcompleted intializing GadoSystem"
+        Thread.__init__(self)
     
-    db.artifacts.insert(artifact_set=c_id)
-    db.artifacts.insert(artifact_set=d_id)
-    db.artifacts.insert(artifact_set=i_id)
-    db.artifacts.insert(artifact_set=f_id)
+    def run(self):
+        print "LogicThread\tcalling main loop on gado_sys"
+        self.gado_sys.mainloop()
+        print "LogicThread\tfinished main loop on gado_sys"
         
 if __name__ == '__main__':
     print "Initializing Gado Robot Management Interface"
     
-    # Import current gado settings
-    settings = import_settings()
-    
-    # Get access to the DB
-    db = DBFactory(**settings).get_db()
-    db_interface = DBInterface(db)
-    
-    create_dummy_artifact_sets(db)
-    
-    #Create instance of robot
-    gado = Robot(**settings)
-    
-    #Create instance of the Scanner object
-    scanner = Scanner(**settings)
-    #Perhaps move this connection stuff elsewhere...
-    success = scanner.connectToScannerGui()
-    #scanner.setDPI("600")
-    #scanner.scanImage("C:\Users\Robert\Downloads", "scannedImage.png")
-    #print "Scanner found: %s" % success
-    
-    #Create root of application
+    q = Queue()
     tk = Tk()
+    l = Lock()
+    l.acquire()
     
-    #Start up the Gado System for management
-    gado_sys = GadoSystem(db_interface, gado, tk, scanner)
+    t1 = GuiThread(tk, q, l)
+    t2 = LogicThread(q, l)
     
-    #When we exit, destroy the root of the application
-    tk.destroy()
+    l.release()
+    t1.start()
+    l.acquire()
+    t2.start()
+    l.release()
+    
+    
+    # It would be nice to check to see if the LogicThread ate it.
     

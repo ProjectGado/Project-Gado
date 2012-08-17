@@ -3,11 +3,13 @@ from Tkinter import *
 import tkMessageBox
 import ttk
 import Pmw
+import gado.messages as messages
+from gado.functions import *
 
 class ManageSets():
-    def __init__(self, root, dbi, gado_sys):
-        self.gado_sys = gado_sys
-        self.dbi = dbi
+    def __init__(self, root, q, l):
+        self.q = q
+        self.l = l
         
         window = Toplevel(root)
         window.title("Manage Artifact Sets")
@@ -67,7 +69,9 @@ class ManageSets():
         self.sets_box.delete(0, 'end')
         
         # Get the list of sets and add to the box
-        self.artifact_sets = self.dbi.artifact_set_list()
+        self.q.put((messages.ARTIFACT_SET_LIST))
+        msg = fetch_from_queue(self.q, messages.RETURN, timeout=10)
+        self.artifact_sets = msg[1]
         for id, indented_name in self.artifact_sets:
             self.sets_box.insert('end', indented_name)
     
@@ -77,9 +81,11 @@ class ManageSets():
         if not name:
             print 'how do we show an error? the set must be named'
             return
-        self.dbi.add_artifact_set(name, self.selected_set)
+        add_to_queue(q, l, messages.RETURN, dict(name=name,parent=self.selected_set))
+        msg = fetch_from_queue(self.q, messages.RETURN, timeout=10)
         self._refresh()
     
     def _delete_set(self):
-        self.dbi.delete_artifact_set(self.selected_set)
+        add_to_queue(q, l, messages.DELETE_ARTIFACT_SET_LIST, self.selected_set)
+        msg = fetch_from_queue(self.q, messages.RETURN, timeout=10)
         self._refresh()

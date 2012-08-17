@@ -11,6 +11,28 @@ from gado.Robot import Robot
 from gado.functions import *
 from gado.gui.ManageSets import ManageSets
 from gado.gui.ConfigurationWindow import ConfigurationWindow
+import gado.messages as messages
+from threading import Thread
+
+class GuiListener(Thread):
+    def __init__(self, q, l, gui):
+        self.gui = gui
+        self.q = q
+        self.l = l
+        Thread.__init__(self)
+
+    def run(self):
+        while True:
+            msg = fetch_from_queue(self.q, self.l)
+            print 'GuiListener\tFetched message %s' % str(msg)
+            if msg[0] == messages.SET_SCANNER_PICTURE:
+                self.gui.changeScannedImage(msg[1])
+            elif msg[0] == messages.SET_WEBCAM_PICTURE:
+                self.gui.changeWebcamImage(msg[1])
+            elif msg[0] == messages.SET_STATUS_TEXT:
+                self.gui.changeStatusText(msg[1])
+            else:
+                add_to_queue(self.q, self.l, msg[0], (msg[1] if len(msg) > 1 else None))
 
 class GadoGui(Frame):
     
@@ -24,66 +46,39 @@ class GadoGui(Frame):
     global frontImageLabel
     global backImageLabel
     
-    def _demo(meter, value):
-        meter.set(value)
-        if value < 1.0:
-            value = value + 0.005
-            meter.after(50, lambda: _demo(meter, value))
-        else:
-            meter.set(value, 'Demo successfully finished')
-    
-    def __init__(self, root, db_interface, gado_system):
+    def __init__(self, root, q, l):
         # Create the root frame
         self.root = root
+        self.q = q
+        self.l = l
+        self.t1 = GuiListener(q, l, self)
         
         #Initialize the master frame
         Frame.__init__(self, self.root)
+    
+    def load(self):
+        print 'GadoGui\tfetch_from_queue READY'
+        #fetch_from_queue(self.q, self.l, messages.READY)
+        print 'GadoGui\tfetch_from_queue DONE'
         
-        # The Gado ecosystem manager
-        self.gado_sys = gado_system
-        
-        #Store the database connection as a global
-        self.dbi = db_interface
-        
-        self.manage_sets = ManageSets(self.root, self.dbi, self.gado_sys)
-        self.config_window = ConfigurationWindow(self.root, self.dbi, self.gado_sys)
+        self.manage_sets = ManageSets(self.root, self.q, self.l)
+        self.selected_set = None
+        self.config_window = ConfigurationWindow(self.root, self.q, self.l)
         
         #Create all menus for application
         self.createMenus(self.root)
         
-       # self.createTopLevelWidgets()
-        
-        
-        '''
-        #self.manage_gui = ManageArtifactSetGui(self)
-       # self.manage_gui.withdraw()
-        
-        #configure the layout of the gado setup
-        self.configurationWindow = Toplevel(self)
-        
-        #create the config dialog toplevel object
-        self.configDialog = Toplevel(self)
-        
-
-        
-        self.createConfigurationWindowWidgets()
-        
-        self.configurationWindow.protocol("WM_DELETE_WINDOW", self.configurationWindow.withdraw)
-        self.configurationWindow.withdraw()
-        
-        #Set the current conf parameter to None
-        self.currentConfParam = None
-        '''
         #Pack the widgets and create the GUI
         self.pack()
         self.createWidgets()
+        
+        self.t1.start()
         
     #################################################################################
     #####                           MENU FUNCTIONS                              #####
     #################################################################################
     
     def createMenus(self, master=None):
-        
         #Create the drop down menu
         self.menubar = Menu(master)
         
@@ -119,8 +114,6 @@ class GadoGui(Frame):
     #################################################################################
     
     def createWidgets(self):
-        #Create the connection control widgets
-        #self.createConnectionControlWidgets()
         
         #Create the artifactSet section
         self.createArtifactSetWidgets()
@@ -133,39 +126,7 @@ class GadoGui(Frame):
         
         #Create the image display widgets
         self.createImageDisplayWidgets()
-        
-    def createConnectionControlWidgets(self):
-        #Create the label
-        self.connectionLabel = Label(self)
-        self.connectionLabel["text"] = "Connection Control: "
-        self.connectionLabel.grid(row=0, column=0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        #Comm port selection lab3l
-        self.commSelectLabel = Label(self)
-        self.commSelectLabel["text"] = "Select a Comm Port: "
-        self.commSelectLabel.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
-        
-        #Comm port selection dropdown
-        self.commPortDropDown = Pmw.ComboBox(self)
-        self.commPortDropDown.grid(row=1, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
-        
-        #Add in the actual available comm ports
-        ports = ['a', 'b']
-        
-        for port in ports:
-            self.commPortDropDown.insert(END, port)
-            
-        #Create the buttons to connect and disconnect the robot
-        self.connectButton = Button(self)
-        self.connectButton["text"] = "Connect to Robot"
-        self.connectButton["command"] = self.connectToRobot
-        self.connectButton.grid(row=2, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
-        
-        self.disconnectButton = Button(self)
-        self.disconnectButton["text"] = "Disconnect from Robot"
-        self.disconnectButton["command"] = self.disconnectFromRobot
-        self.disconnectButton.grid(row=2, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
-        
+    
     def createArtifactSetWidgets(self):
         #Create label
         artifactSetLabel = Label(self)
@@ -189,6 +150,11 @@ class GadoGui(Frame):
         self.selected_set = self.weighted_sets[int(idx)][0]
         if not self.selected_set:
             tkMessageBox.showerror("Invalid Set Selection", "Please select a valid set, or create a new one.")
+        else:
+            add_to_queue(self.q, self.l, messages.SET_SELECTED_ARTIFACT_SET, self.selected_set)
+            print 'GadoGui\tadded to queue, trying to pull from queue now'
+            fetch_from_queue(self.q, self.l, messages.RETURN)
+            print 'GadoGui\tfetched return from queue'
     
     def createControlWidgets(self):
         #Create label
@@ -242,7 +208,6 @@ class GadoGui(Frame):
         
         image2 = Image.open("test.jpg")
         image2.thumbnail((500,500), Image.ANTIALIAS)
-        #image = image.resize((500, 500), Image.ANTIALIAS)
         
         self.frontImage = ImageTk.PhotoImage(image)
         self.backImage = ImageTk.PhotoImage(image2)
@@ -255,17 +220,6 @@ class GadoGui(Frame):
         self.backImageLabel.photo = self.backImage
         self.backImageLabel.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
         
-        #canvas = Canvas(self, bg="black", width=self.frontImage.width(), height=self.frontImage.height())
-        #grid(row=10, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
-        #print "w: %s, h: %s" % (self.frontImage.width(), self.frontImage.height())
-        #canvas.place(x=0, y=0)
-        #canvas.pack()
-        #canvas.place(x=0, y=0, width=self.frontImage.width(), height=self.frontImage.height())
-        #canvas.grid(row=10, column=0, columnspan=1, sticky=N+S+E+W, padx=10, pady=5)
-        #canvas.create_image(0, 0, image=self.frontImage)
-        #labelImage = Label(self, image=tkImage)
-        #labelImage.place(x=0, y=0, width=image.size[0], height=image.size[1])
-        #labelImage.grid(row=10, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
         
     #################################################################################
     #####                           FUNCTION WRAPPERS                           #####
@@ -276,50 +230,44 @@ class GadoGui(Frame):
         self._populate_set_dropdown()
     
     def _populate_set_dropdown(self):
-        self.weighted_sets = self.dbi.weighted_artifact_set_list()
+        add_to_queue(self.q, self.l, messages.WEIGHTED_ARTIFACT_SET_LIST)
+        msg = fetch_from_queue(self.q, self.l, messages.RETURN)
+        self.weighted_sets = msg[1]
         for id, indented_name in self.weighted_sets:
             self.set_dropdown.insert('end', indented_name)
     
-    
     def connectToRobot(self):
-        success = self.gado_sys.connect()
+        add_to_queue(self.q, self.l, messages.ROBOT_CONNECT)
+        msg = fetch_from_queue(self.q, self.l, messages.RETURN, timeout=30)
+        success = msg[1]
         if success:
             tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
         else:
             tkMessageBox.showerror("Connection Status", "Could not connect to Gado, please ensure it is on and plugged into the computer")
         return success
     
-    def disconnectFromRobot(self):
-        success = self.gado_sys.disconnect()
-        if success:
-            tkMessageBox.showinfo("Connection Status", "Closed connection to Gado!")
-        else:
-            tkMessageBox.showerror("Connection Status", "Error closing connection, was it connected?")
-    
     def startRobot(self):
         #Function call to start robot's operation
-        print "Starting robot..."
-        #self.gado.lowerAndLiftInternal()
-        #self.gado.sendRawActuatorWithoutBlocking(200)
-        self.gado_sys.start()
+        print "GadoGui\tStarting robot..."
+        self.q.put((messages.START, ))
         
     def pauseRobot(self):
         #Function call to pause robot's operation
-        print "Pausing robot..."
-        self.gado_sys.pause()
+        print "GadoGui\tPausing robot..."
+        self.q.put((messages.LAST_ARTIFACT, ))
     
     def resumeRobot(self):
-        self.gado_sys.resume()
+        self.q.put((messages.START, ))
     
     def stopRobot(self):
         #Function call to stop robot's operation
         print "Stopping robot..."
-        self.gado_sys.stop()
+        self.q.put((messages.STOP, ))
         
     def resetRobot(self):
         #Function call to reset the robot's operations
         print "Restarting robot..."
-        self.gado_sys.reset()
+        self.q.put((messages.RESET, ))
         
     #Image transferring functions
     

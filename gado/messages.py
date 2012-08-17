@@ -1,0 +1,47 @@
+# Database requests
+WEIGHTED_ARTIFACT_SET_LIST = 0
+ARTIFACT_SET_LIST = 1
+ADD_ARTIFACT_SET_LIST = 2
+DELETE_ARTIFACT_SET_LIST = 3
+
+# General robot commands
+START = 4
+STOP = 5
+LAST_ARTIFACT = 6
+RESET = 7
+
+# Connection and pictures
+ROBOT_CONNECT = 8
+
+SCANNER_PICTURE = 9
+SCANNER_CONNECT = 10
+
+WEBCAM_PICTURE = 11
+WEBCAM_CONNECT = 12
+
+# Manual robot controls
+MOVE_RIGHT = 13
+MOVE_LEFT = 14
+MOVE_UP = 15
+MOVE_DOWN = 16
+
+DROP = 17
+LIFT = 18
+
+
+# Returning values
+RETURN = 19 # returning useful stuff (like db info)
+UPDATE = 20 # providing an interface update, "Gado is currently XXXXX"
+
+
+# MISC
+SET_SELECTED_ARTIFACT_SET = 21
+RELOAD_SETTINGS = 22
+LAUNCH_WIZARD = 23
+READY = 24
+
+
+# GUI Messages
+SET_SCANNER_PICTURE = 25
+SET_WEBCAM_PICTURE = 26
+SET_STATUS_TEXT = 27

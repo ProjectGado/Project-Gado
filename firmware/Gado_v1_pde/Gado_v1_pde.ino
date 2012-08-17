@@ -118,7 +118,10 @@ void loop()
         break;
       case 'h':
         Serial.print(handshake);  
-        break;    
+        break;
+      case 'p':
+        drop();
+        break;
     }
     if (ch != 'h' && ch != 'd' && ch != '0' && ch != '1' && ch != '2' && ch != '3' && ch != '4' && ch != '5' && ch != '6' && ch != '7' && ch != '8' && ch != '9' && ch != '\n' && ch != '\r') {
         gatherAndEcho();
@@ -138,6 +141,7 @@ void gatherSensorData() {
     light_value = analogRead(photo_sense_pin);
     act_pos_sense = analogRead(actuator_position_pin);
     fsr_value = analogRead(fsr_pin);
+    lastButtonState = analogRead(buttonPin);
 }
 
 //Print the robot's current state over the serial, in JSON
@@ -166,6 +170,9 @@ void echoDataJson() {
     Serial.print(",");
     //Pump current
     Serial.print("\"pump_current\": \"" + String(pump_current) + "\"");
+    Serial.print(",");
+    //Button state
+    Serial.print("\"button_state\": \"" + String(lastButtonState) + "\"");
     Serial.print("}");
     Serial.println();
 }

@@ -1,15 +1,11 @@
-import serial
-import platform
-import time
-import sys
-from gado.pytesser import *
+import serial, platform, time, sys
 
 #Constants
 MOVE_ARM = 'a'
 MOVE_ACTUATOR = 's'
 MOVE_VACUUM = 'v'
 RETURN_CURRENT_SETTINGS = 'd'
-DROP_TO_SCANNER = 'p'
+DROP_ACTUATOR = 'p'
 
 HANDSHAKE = 'h' # checks to see if we're actually talking to the robot
 LOWER_AND_LIFT = 'l' # runs a routine on the robot to pick up an artifact
@@ -19,12 +15,15 @@ RESET_TO_HOME = '4' # runs a routine to move the arm home
 
 HANDSHAKE_VALUE = 'Im a robot!'
 
+
+ACTUATOR_LOWER_BOUNDS = 0
+ACTUATOR_UPPER_BOUNDS = 255
+
+ARM_LOWER_BOUNDS = 0
+ARM_UPPER_BOUNDS = 190 # can we increase this?
+
 class Robot(object):
-    #Globals
-    global serialConnection
-    
-    
-    def __init__(self, arm_home_value, arm_in_value, arm_out_value, actuator_home_value, baudrate, actuator_up_value, **kargs):
+    def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0, actuator_home_value=30, baudrate=115200, actuator_up_value=30, **kargs):
         #Grab settings
         self.arm_home_value = arm_home_value
         self.arm_in_value = arm_in_value
@@ -33,6 +32,8 @@ class Robot(object):
         self.baudrate = baudrate
         self.actuator_up_value = actuator_up_value
         self.serialConnection = None
+        self.current_arm_value = arm_home_value
+        self.current_actuator_value = actuator_up_value
         
     #Take in a dictionary of all of the robot settings and make these the current settings
     #It is important that all robot specific settings are passed, otherwise things may break
@@ -79,6 +80,9 @@ class Robot(object):
         if self.serialConnection.isOpen():
             print "Inside robot connect"
             #Initiate the handshake with the (potential) robot
+            self.serialConnection.flush()
+            self.serialConnection.flushInput()
+            self.serialConnection.flushOutput()
             self.serialConnection.write(HANDSHAKE)
             
             #give it a second to respond
@@ -89,7 +93,7 @@ class Robot(object):
             
             print "response: \"%s\"" % response
             
-            if response == HANDSHAKE_VALUE:
+            if response.find(HANDSHAKE_VALUE) >= 0:
                 self._moveArm(self.arm_home_value)
                 return True
         return False
@@ -103,17 +107,37 @@ class Robot(object):
         Checks to see if the robot is connected
         '''
         if self.serialConnection and self.serialConnection.isOpen():
+            #self.serialConnection.
             self.serialConnection.write(HANDSHAKE)
             
             #Read back response from (tentative) robot
-            response = self.serialConnection.read(100)
+            response = self.serialConnection.read(200)
             print "Got serial response: %s, with port %s and baud %s" % (response, self.serialConnection.port, self.serialConnection.baudrate)
             
-            if response == HANDSHAKE_VALUE:
+            if response.find(HANDSHAKE_VALUE) >= 0:
                 return True
             
         #self.serialConnection = False
         return False
+    
+    def move_actuator(up):
+        if up: # retracting the actuator moves it up
+            n = self.current_actuator_value - 1
+        else: # extending moves it down
+            n = self.current_actuator_value + 1
+        self._moveActuator(n)
+    
+    def move_arm(clockwise):
+        if clockwise:
+            n = self.current_arm_value + 1
+        else:
+            n = self.current_arm_value - 1
+        self._moveArm(n)
+    
+    def drop_actuator(self):
+        self._vacuumOn(True)
+        self.serialConnection.write('%s' % DROP_ACTUATOR)
+        self.clearSerialBuffers()
     
     def _drop(self):
         self.serialConnection.write('%s' % DROP_ON_OUT_PILE)
@@ -121,8 +145,12 @@ class Robot(object):
     
     #Move the robot's arm to the specified degree (between 0-180)
     def _moveArm(self, degree):
+        if degree < ACTUATOR_LOWER_BOUNDS:
+            degree = ACTUATOR_LOWER_BOUNDS
+        elif degree > ACTUATOR_UPPER_BOUNDS:
+            degree = ACTUATOR_UPPER_BOUNDS
         self.serialConnection.write("%s%s" % (degree, MOVE_ARM))
-        
+        self.current_arm_value = degree
         #Flush the serial line so we don't get any overflows in the event
         #that many commands are trying to be sent at once
         self.clearSerialBuffers()
@@ -130,8 +158,12 @@ class Robot(object):
     
     #Move the robot's actuator to the specified stroke
     def _moveActuator(self, stroke):
+        if stroke < ACTUATOR_LOWER_BOUNDS:
+            stroke = ACTUATOR_LOWER_BOUNDS
+        elif stroke > ACTUATOR_UPPER_BOUNDS:
+            stroke = ACTUATOR_UPPER_BOUNDS
         self.serialConnection.write("%s%s" % (stroke, MOVE_ACTUATOR))
-    
+        self.current_actuator_value = stroke
         #Flush the serial line so we don't get any overflows in the event
         #that many commands are trying to be sent at once
         self.clearSerialBuffers()
@@ -139,14 +171,10 @@ class Robot(object):
         
     #Turn on the vacuum to the power level: value
     def _vacuumOn(self, value):
-        '''
-            
-        '''
-        self.serialConnection.write("%s%s" % (value, MOVE_VACUUM))        
+        self.serialConnection.write("%s%s" % (255 if value else 0, MOVE_VACUUM))
     
     #Clear all buffers on the serial line
-    def clearSerialBuffers(self):
-        
+    def clearSerialBuffers(self):        
         if self.serialConnection.isOpen():
             self.serialConnection.flushInput()
             self.serialConnection.flushOutput()
@@ -157,6 +185,11 @@ class Robot(object):
         self._moveArm(self.arm_home_value)
         self._moveActuator(self.actuator_up_value)
         self._vacuumOn(0)
+        
+    def lift(self):
+        self._vacuumOn(True)
+        self.serialConnection.write("%s" % LOWER_AND_LIFT)
+        time.sleep(10)
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware
@@ -165,10 +198,7 @@ class Robot(object):
         self._moveArm(self.arm_in_value)
         time.sleep(5)
         print 'turning on vacuum'
-        self._vacuumOn(255)
-        print 'lower and lift'
-        self.serialConnection.write("%s" % LOWER_AND_LIFT)
-        time.sleep(10)
+        self.lift()
         print 'hopefully successfully picked up!'
         return True
     
@@ -191,63 +221,6 @@ class Robot(object):
         time.sleep(5)
         self._vacuumOn(0)
         return True
-    
-    
-    #Start the robot's scanning procedure
-    def start(self):
-        completed = False
-        
-        #while not completed:
-        #reset the robot to the default values
-        self.reset()
-        
-        #Move to home position and pause for 2 seconds
-        time.sleep(5)
-        
-        #Move to0 input pile
-        self._moveArm(self.arm_in_value)
-        print "Input pile, taking picture"
-        self._vacuumOn(255)
-        time.sleep(5)
-        
-        #to scanner
-        self._moveArm(self.arm_home_value)
-        self._moveActuator(self.actuator_home_value)
-        self._vacuumOn(0)
-        print "Above scanner"
-        time.sleep(5)
-        
-        #actuator up and to the output
-        self._moveActuator(self.actuator_up_value)
-        self._moveArm(self.arm_out_value)
-        
-        time.sleep(5)
-        #
-        '''
-        completed = False
-        while not completed:
-            pass
-        '''
-        
-        ##CODE TO TAKE A PICTURE OF THE BACK OF TEH IMAGE##
-        
-        ##CHECK TO SEE IF WE FOUND A BARCODE (END OF STACK)##
-        
-        ##IF NOT, LOWER AND LIFT##
-        #self.pickUpObject()
-        
-        ##MOVE TO SCANNER AND DROP UNTIL WE HIT IT##
-        #self.moveArm(self.settings['scanner_location'])
-        #self.pickUpObject()
-        
-        ##TURN ON SCANNER AND SCAN THE IMAGE##
-        
-        ##LIFT ACTUATOR##
-        
-        ##MOVE ARM TO OUTPUT POSITION##
-        
-        ##REMOVE POWER TO VACUUM##
-        
     
     #Pause the robot in its current step
     def pause(self):

@@ -157,7 +157,6 @@ class DBInterface():
         self.db(self.db.artifact_sets.id == id).delete()
         self.db.commit()
     
-    
     def _get_set_name(self, id):
         '''
         Concatenates 

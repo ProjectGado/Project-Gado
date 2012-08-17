@@ -1,7 +1,6 @@
 from __future__ import division
 import win32com.client
-import os
-import sys
+import os, sys, pythoncom
 
 #Constants
 
@@ -21,6 +20,8 @@ DEFAULT_DPI = 600
 class Scanner():
     
     def __init__(self, **kwargs):
+        
+        pythoncom.CoInitialize()
         
         #Init all of the scanner objects
         self.deviceManager = win32com.client.Dispatch(DEVICE_MANAGER)
@@ -187,6 +188,9 @@ class Scanner():
                         return True
                     
         return False
+    
+    def connected(self):
+        return True
     
     #Use Windows Image Aquisition's API to automatically pick the scanner to use
     #If there are multiple scanners available then a GUI pops up allowing the user to select one

@@ -1,6 +1,7 @@
 import sys, ttk, Pmw, time, tkMessageBox
 from Tkinter import *
 from gado.functions import *
+import gado.messages as messages
 
 INPUT_TRAY_LOCATION = 'arm_in_value'
 OUTPUT_TRAY_LOCATION = 'arm_out_value'
@@ -8,9 +9,9 @@ SCANNER_LOCATION = 'arm_home_value'
 SCANNER_HEIGHT = 'actuator_home_value'
 
 class ConfigurationWindow():
-    def __init__(self, root, dbi, gado_sys):
-        self.gado_sys = gado_sys
-        self.dbi = dbi
+    def __init__(self, root, q, l):
+        self.q = q
+        self.l = l
         
         window = Toplevel(root)
         window.title("Manage Artifact Sets")
@@ -46,6 +47,8 @@ class ConfigurationWindow():
         window.withdraw()
         
         self._create_dialog(root)
+        self.new_actuator_position = None
+        self.new_arm_position = None
     
     def show(self):
         self.window.deiconify()
@@ -80,14 +83,15 @@ class ConfigurationWindow():
     def _save_config(self):
         acp = self.active_conf_param
         args = dict()
-        if acp.find('arm') >= 0:
-            args[acp] = self.gado_sys.getArmPosition()
+        if acp.find('arm') >= 0 and self.new_arm_position:
+            args[acp] = self.new_arm_position
             export_settings(**args)
-        else:
-            args[acp] = self.gado_sys.getActuatorPosition()
+        elif acp.find('actuator') >= 0 and self.new_actuator_position:
+            args[acp] = self.new_actuator_position
             export_settings(**args)
         
-        self.gado_sys.updateSettings()
+        add_to_queue(self.q, self.l, messages.RELOAD_SETTINGS)
+        fetch_from_queue(self.q, self.l, messages.RETURN)
         self.dialog.withdraw()
     
     def _configuring_arm(self):
@@ -97,22 +101,31 @@ class ConfigurationWindow():
 
         # Delay between robot commands for consistent behavior
         t = time.time()
+        l = self.l
+        q = self.q
         if t - self._lastTime > 0.1:
             key = event.keycode
             if self._configuring_arm():
                 if key == 37:
                     #Left arrow press
-                    self.gado_sys.moveArmBackwards()
-                
+                    add_to_queue(q, l, messages.MOVE_LEFT)
+                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    self.new_arm_position = msg[1]
                 elif key == 39:
                     #Right arrow press
-                    self.gado_sys.moveArmForward()
+                    add_to_queue(q, l, messages.MOVE_RIGHT)
+                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    self.new_arm_position = msg[1]
             else:
                 if key == 38:
                     #Up arrow press
-                    self.gado_sys.moveActuatorDown()
+                    add_to_queue(q, l, messages.MOVE_DOWN)
+                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    self.new_actuator_position = msg[1]
                 elif key == 40:
                     #Down arrow press
-                    self.gado_sys.moveActuatorUp()
+                    add_to_queue(q, l, messages.MOVE_UP)
+                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    self.new_actuator_position = msg[1]
             
             self._lastTime = t

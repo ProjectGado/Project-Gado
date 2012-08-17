@@ -1,6 +1,40 @@
-import json, os
+import json, os, datetime, time
 
 from subprocess import Popen, PIPE
+
+
+def fetch_from_queue(q, l, message=None, timeout=None):
+    
+    start = datetime.datetime.now()
+    while True:
+        # we check for emptiness, instead of continuous .get()
+        # so that we can timeout if needed
+        
+        '''
+        if not q.empty():
+            msg = q.get()
+            print 'somebody is fetching from queue: %s' % msg
+            if (message and msg[0] == message) or (not message):
+                return msg
+            else:
+                q.put(msg)
+        if timeout and datetime.datetime.now() - start > timeout:
+            #l.release()
+            raise Exception("message never received")
+        '''
+        msg = q.get()
+        print 'functions\tsomebody is fetching from queue:', msg
+        if (message and msg[0] == message) or (not message):
+            return msg
+        else:
+            q.put(msg)
+        time.sleep(0.1)
+
+def add_to_queue(q, l, message, arguments=None):
+    print 'functions\tsomebody is adding %s to queue with arguments: %s' % (message, str(arguments))
+    #time.sleep(1)
+    q.put((message, arguments))
+    pass
 
 def import_settings():
     try:
