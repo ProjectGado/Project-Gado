@@ -13,17 +13,26 @@ from gado.gui.ManageSets import ManageSets
 from gado.gui.ConfigurationWindow import ConfigurationWindow
 import gado.messages as messages
 from threading import Thread
+from Queue import Queue
 
 class GuiListener(Thread):
-    def __init__(self, q, l, gui):
-        self.gui = gui
+    def __init__(self, q, gui_q, gui):
+        self.gui_q = gui_q
         self.q = q
-        self.l = l
+        self.gui = gui
         Thread.__init__(self)
+    
+    def showErrorMessage(self, text):
+        print 'calling tkMessageBox.showError with text "%s"' % text
+        tkMessageBox.showerror("Error", text)
+        print 'and there went that call.'
+    
+    def showInfoMessage(self, text):
+        tkMessageBox.showinfo("Info", text)
 
     def run(self):
         while True:
-            msg = fetch_from_queue(self.q, self.l)
+            msg = fetch_from_queue(self.q)
             print 'GuiListener\tFetched message %s' % str(msg)
             if msg[0] == messages.SET_SCANNER_PICTURE:
                 self.gui.changeScannedImage(msg[1])
@@ -31,8 +40,15 @@ class GuiListener(Thread):
                 self.gui.changeWebcamImage(msg[1])
             elif msg[0] == messages.SET_STATUS_TEXT:
                 self.gui.changeStatusText(msg[1])
+            elif msg[0] == messages.DISPLAY_ERROR:
+                add_to_queue(self.gui_q, messages.DISPLAY_ERROR, msg[1])
+            elif msg[0] == messages.DISPLAY_INFO:
+                add_to_queue(self.gui_q, messages.DISPLAY_INFO, msg[1])
+            elif msg[0] == messages.GUI_ABANDON_SHIP:
+                self.gui.root.destroy()
+                exit()
             else:
-                add_to_queue(self.q, self.l, msg[0], (msg[1] if len(msg) > 1 else None))
+                add_to_queue(self.q, msg[0], (msg[1] if len(msg) > 1 else None))
 
 class GadoGui(Frame):
     
@@ -46,24 +62,20 @@ class GadoGui(Frame):
     global frontImageLabel
     global backImageLabel
     
-    def __init__(self, root, q, l):
+    def __init__(self, q_in, q_out):
         # Create the root frame
-        self.root = root
-        self.q = q
-        self.l = l
-        self.t1 = GuiListener(q, l, self)
-        
+        self.q_in = q_in
+        self.q_out = q_out
+        self.gui_q = Queue()
+        self.t1 = GuiListener(q_in, self.gui_q, self)
+        self.root = Tk()
         #Initialize the master frame
         Frame.__init__(self, self.root)
     
-    def load(self):
-        print 'GadoGui\tfetch_from_queue READY'
-        #fetch_from_queue(self.q, self.l, messages.READY)
-        print 'GadoGui\tfetch_from_queue DONE'
-        
-        self.manage_sets = ManageSets(self.root, self.q, self.l)
+    def load(self):        
+        self.manage_sets = ManageSets(self.root, self.q_in, self.q_out)
         self.selected_set = None
-        self.config_window = ConfigurationWindow(self.root, self.q, self.l)
+        self.config_window = ConfigurationWindow(self.root, self.q_in, self.q_out)
         
         #Create all menus for application
         self.createMenus(self.root)
@@ -73,6 +85,8 @@ class GadoGui(Frame):
         self.createWidgets()
         
         self.t1.start()
+        self.tkloop()
+        self.root.mainloop()
         
     #################################################################################
     #####                           MENU FUNCTIONS                              #####
@@ -94,7 +108,13 @@ class GadoGui(Frame):
         
         #Assign menubar
         master.config(menu=self.menubar)
-        
+    
+    def changeStatusText(self, text):
+        self.messageEntry.config(state=NORMAL)
+        self.messageEntry.delete(0, 'end')
+        self.messageEntry.insert('end', text)
+        self.messageEntry.config(state=DISABLED)
+    
     def createFileMenu(self, menubar=None, master=None):
         
         self.fileMenu = Menu(self.menubar, tearoff=0)
@@ -108,6 +128,19 @@ class GadoGui(Frame):
         self.settingsMenu.add_command(label="Configure Layout", command=self.config_window.show)
         
         return self.settingsMenu
+    
+    def tkloop(self):
+        try:
+            while True:
+                msg = self.gui_q.get_nowait()
+                print 'GadoGui\msg:', msg
+                if msg[0] == messages.DISPLAY_ERROR:
+                    tkMessageBox.showerror("Error", msg[1])
+                elif msg[0] == messages.DISPLAY_INFO:
+                    tkMessageBox.showinfo("Info", msg[1])
+        except:
+            pass
+        self.root.after(100, self.tkloop)
         
     #################################################################################
     #####                           WIDGET FUNCTIONS                            #####
@@ -151,10 +184,7 @@ class GadoGui(Frame):
         if not self.selected_set:
             tkMessageBox.showerror("Invalid Set Selection", "Please select a valid set, or create a new one.")
         else:
-            add_to_queue(self.q, self.l, messages.SET_SELECTED_ARTIFACT_SET, self.selected_set)
-            print 'GadoGui\tadded to queue, trying to pull from queue now'
-            fetch_from_queue(self.q, self.l, messages.RETURN)
-            print 'GadoGui\tfetched return from queue'
+            add_to_queue(self.q_out, messages.SET_SELECTED_ARTIFACT_SET, self.selected_set)
     
     def createControlWidgets(self):
         #Create label
@@ -219,7 +249,11 @@ class GadoGui(Frame):
         self.backImageLabel = Label(self, image=self.backImage)
         self.backImageLabel.photo = self.backImage
         self.backImageLabel.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
-        
+    
+    def destroy(self):
+        #add_to_queue(self.q, messages.SYSTEM_ABANDON_SHIP)
+        add_to_queue(self.q_out, messages.MAIN_ABANDON_SHIP)
+        self.root.destroy()
         
     #################################################################################
     #####                           FUNCTION WRAPPERS                           #####
@@ -230,15 +264,15 @@ class GadoGui(Frame):
         self._populate_set_dropdown()
     
     def _populate_set_dropdown(self):
-        add_to_queue(self.q, self.l, messages.WEIGHTED_ARTIFACT_SET_LIST)
-        msg = fetch_from_queue(self.q, self.l, messages.RETURN)
+        add_to_queue(self.q_out, messages.WEIGHTED_ARTIFACT_SET_LIST)
+        msg = fetch_from_queue(self.q_in, messages.RETURN)
         self.weighted_sets = msg[1]
         for id, indented_name in self.weighted_sets:
             self.set_dropdown.insert('end', indented_name)
     
     def connectToRobot(self):
-        add_to_queue(self.q, self.l, messages.ROBOT_CONNECT)
-        msg = fetch_from_queue(self.q, self.l, messages.RETURN, timeout=30)
+        add_to_queue(self.q_out, messages.ROBOT_CONNECT)
+        msg = fetch_from_queue(self.q_in, messages.RETURN, timeout=30)
         success = msg[1]
         if success:
             tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
@@ -249,25 +283,25 @@ class GadoGui(Frame):
     def startRobot(self):
         #Function call to start robot's operation
         print "GadoGui\tStarting robot..."
-        self.q.put((messages.START, ))
+        add_to_queue(self.q_out, messages.START)
         
     def pauseRobot(self):
         #Function call to pause robot's operation
         print "GadoGui\tPausing robot..."
-        self.q.put((messages.LAST_ARTIFACT, ))
+        add_to_queue(self.q_out, messages.LAST_ARTIFACT)
     
     def resumeRobot(self):
-        self.q.put((messages.START, ))
+        add_to_queue(self.q_out, messages.START)
     
     def stopRobot(self):
         #Function call to stop robot's operation
         print "Stopping robot..."
-        self.q.put((messages.STOP, ))
+        add_to_queue(self.q_out, messages.STOP)
         
     def resetRobot(self):
         #Function call to reset the robot's operations
         print "Restarting robot..."
-        self.q.put((messages.RESET, ))
+        add_to_queue(self.q_out, messages.RESET)
         
     #Image transferring functions
     

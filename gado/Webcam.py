@@ -4,9 +4,9 @@ class Webcam(Device):
     def __init__(self, **kargs):
         try:
             Device.__init__(self)
-            self.connected = True
+            self._connected = True
         except:
-            self.connected = False
+            self._connected = False
         #self.setResolution(1600, 1200)
         #self.displayCapturePinProperties()
     
@@ -15,4 +15,4 @@ class Webcam(Device):
             self.saveSnapshot(path)
 
     def connected(self):
-        return self.connected
+        return self._connected

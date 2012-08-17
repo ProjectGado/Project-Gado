@@ -9,9 +9,9 @@ SCANNER_LOCATION = 'arm_home_value'
 SCANNER_HEIGHT = 'actuator_home_value'
 
 class ConfigurationWindow():
-    def __init__(self, root, q, l):
-        self.q = q
-        self.l = l
+    def __init__(self, root, q_in, q_out):
+        self.q_in = q_in
+        self.q_out = q_out
         
         window = Toplevel(root)
         window.title("Manage Artifact Sets")
@@ -90,8 +90,7 @@ class ConfigurationWindow():
             args[acp] = self.new_actuator_position
             export_settings(**args)
         
-        add_to_queue(self.q, self.l, messages.RELOAD_SETTINGS)
-        fetch_from_queue(self.q, self.l, messages.RETURN)
+        add_to_queue(self.q_out, messages.RELOAD_SETTINGS)
         self.dialog.withdraw()
     
     def _configuring_arm(self):
@@ -101,31 +100,31 @@ class ConfigurationWindow():
 
         # Delay between robot commands for consistent behavior
         t = time.time()
-        l = self.l
-        q = self.q
+        q = self.q_out
+        q_in = self.q_in
         if t - self._lastTime > 0.1:
             key = event.keycode
             if self._configuring_arm():
                 if key == 37:
                     #Left arrow press
-                    add_to_queue(q, l, messages.MOVE_LEFT)
-                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    add_to_queue(q, messages.MOVE_LEFT)
+                    msg = fetch_from_queue(q_in, messages.RETURN)
                     self.new_arm_position = msg[1]
                 elif key == 39:
                     #Right arrow press
-                    add_to_queue(q, l, messages.MOVE_RIGHT)
-                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    add_to_queue(q, messages.MOVE_RIGHT)
+                    msg = fetch_from_queue(q_in, messages.RETURN)
                     self.new_arm_position = msg[1]
             else:
                 if key == 38:
                     #Up arrow press
-                    add_to_queue(q, l, messages.MOVE_DOWN)
-                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    add_to_queue(q, messages.MOVE_DOWN)
+                    msg = fetch_from_queue(q_in, messages.RETURN)
                     self.new_actuator_position = msg[1]
                 elif key == 40:
                     #Down arrow press
-                    add_to_queue(q, l, messages.MOVE_UP)
-                    msg = fetch_from_queue(q, l, messages.RETURN)
+                    add_to_queue(q, messages.MOVE_UP)
+                    msg = fetch_from_queue(q_in, messages.RETURN)
                     self.new_actuator_position = msg[1]
             
             self._lastTime = t
