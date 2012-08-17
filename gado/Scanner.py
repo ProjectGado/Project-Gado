@@ -100,6 +100,28 @@ class Scanner():
     
         return False
     
+    #Take the last image scanned on the scanner and transfer it to the local computer
+    #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)
+    def scanImage2(self, imageName):
+        
+        #If the DPI hasn't yet been set, then set it
+        if self.scanDpi is None:
+            self.setDPI(DEFAULT_DPI)
+            
+        try:
+            #Transfer the raw image data from the scanner to the local computer
+            image = self.device.Items[self.device.Items.count].Transfer(WIA_IMG_FORMAT_PNG)
+            
+            #Chdir to specified dir (if exists) and save the file as the passed name
+            #If file already exists, it will be overwritten
+            
+            image.SaveFile(imageName)
+                
+            return True
+        except:
+            print "Error while transferring image from scanner to computer...\nError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
+    
+        return False
     #Pass in a dpi value to explicitly set the scanner to
     #This value is also saved in the gado.conf file for future use
     def setDPI(self, dpiValue):

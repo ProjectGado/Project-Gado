@@ -173,6 +173,54 @@ void echoDataJson() {
 void gotoLevelSense() {
 
 }
+
+void drop()
+{
+  int v = 0;
+  int last_actuator_position = analogRead(actuator_position_pin);
+  int current_actuator_position = last_actuator_position;
+  
+  while(1)
+  {
+    int reading = analogRead(buttonPin);
+    
+    if(reading != lastButtonState)
+    {
+      lastDebounceTime = millis();
+    }
+    
+    //if ((millis() - lastDebounceTime) > debounceDelay)
+    //{
+    //buttonState = reading;
+    
+    if (reading == 0)
+    {
+      //get the current reading of the actuator's position
+      current_actuator_position = analogRead(actuator_position_pin);
+      
+      //Serial.println("New act pos: " + v);
+      if(current_actuator_position == last_actuator_position)
+      {
+        v = v + 10;
+        
+        analogWrite(actuator_pin, v);
+      }
+      
+      last_actuator_position = current_actuator_position;
+      
+      delay(50);
+    }
+    else if(reading > 0 && ((millis() - lastDebounceTime) > debounceDelay))
+    {
+      //spin forever
+      Serial.println("STOPPP!");
+      break;
+    }
+    //}
+    lastButtonState = reading;
+  }
+}
+
 void lowerAndLift()
 {
   int v = 0;

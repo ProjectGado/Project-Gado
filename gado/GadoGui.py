@@ -237,10 +237,10 @@ class GadoGui(Frame):
         self.webCamLabel["text"] = "Webcam Image:"
         self.webCamLabel.grid(row=2, column=2, sticky=W, padx=10, pady=5)
         
-        image = Image.open("C:\\Users\\Robert\\test.png")
+        image = Image.open("test.jpg")
         image.thumbnail((500, 500), Image.ANTIALIAS)
         
-        image2 = Image.open("C:\\Users\\Robert\\test.bmp")
+        image2 = Image.open("test.jpg")
         image2.thumbnail((500,500), Image.ANTIALIAS)
         #image = image.resize((500, 500), Image.ANTIALIAS)
         

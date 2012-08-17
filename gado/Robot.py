@@ -9,6 +9,7 @@ MOVE_ARM = 'a'
 MOVE_ACTUATOR = 's'
 MOVE_VACUUM = 'v'
 RETURN_CURRENT_SETTINGS = 'd'
+DROP_TO_SCANNER = 'p'
 
 HANDSHAKE = 'h' # checks to see if we're actually talking to the robot
 LOWER_AND_LIFT = 'l' # runs a routine on the robot to pick up an artifact
@@ -89,6 +90,7 @@ class Robot(object):
             print "response: \"%s\"" % response
             
             if response == HANDSHAKE_VALUE:
+                self._moveArm(self.arm_home_value)
                 return True
         return False
     
@@ -112,7 +114,10 @@ class Robot(object):
             
         #self.serialConnection = False
         return False
-        
+    
+    def _drop(self):
+        self.serialConnection.write('%s' % DROP_ON_OUT_PILE)
+        self.clearSerialBuffers()
     
     #Move the robot's arm to the specified degree (between 0-180)
     def _moveArm(self, degree):
@@ -156,7 +161,36 @@ class Robot(object):
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware
     def pickUpObject(self):
-        self.serialConnection.write("%s" % self.LOWER_AND_LIFT)
+        print "moving arm to in pile"
+        self._moveArm(self.arm_in_value)
+        time.sleep(5)
+        print 'turning on vacuum'
+        self._vacuumOn(255)
+        print 'lower and lift'
+        self.serialConnection.write("%s" % LOWER_AND_LIFT)
+        time.sleep(10)
+        print 'hopefully successfully picked up!'
+        return True
+    
+    def scanObject(self):
+        print 'moving to home value'
+        self._moveArm(self.arm_home_value)
+        time.sleep(5)
+        print 'dropping actuator'
+        self._moveActuator(self.actuator_home_value)
+        time.sleep(5)
+        print 'done dropping on scanner??'
+        return True
+        
+    def moveToOut(self):
+        print 'lifting actuator up'
+        self._moveActuator(self.actuator_up_value)
+        time.sleep(5)
+        print 'moving to out pile'
+        self._moveArm(self.arm_out_value)
+        time.sleep(5)
+        self._vacuumOn(0)
+        return True
     
     
     #Start the robot's scanning procedure

@@ -1,12 +1,18 @@
 import json, os
 
+from subprocess import Popen, PIPE
+
 def import_settings():
-    # image_path
-    FH = open('gado.conf')
-    conf = FH.read()
-    FH.close()
-    settings = json.loads(conf)
-    return settings
+    try:
+        # image_path
+        FH = open('gado.conf')
+        conf = FH.read()
+        FH.close()
+        settings = json.loads(conf)
+        return settings
+    except:
+        return dict()
+        
 
 #Pass in a dictionary containing the values being changed
 #Can add in new key value pairs also
@@ -28,9 +34,11 @@ def export_settings(**kwargs):
     FH.close()
 
 def check_for_barcode(image_path, code='project gado'):
-    args = ['lib/zbar/zbarimg.exe', '-D', image_path]
+    args = ['lib\zbar\zbarimg.exe', '-q', image_path]
     cmd = ' '.join(args)
-    process = os.popen(cmd)
-    content = process.read()
-    process.close()
-    return content.find(code) >= 0
+    
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+    output, errors = proc.communicate()
+    output = str(output)
+    print "barcode was %sfound" % ('' if output.find(code) >= 0 else 'not ')
+    return output.find(code) >= 0
