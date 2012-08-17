@@ -128,41 +128,40 @@ class Scanner():
     def setDPI(self, dpiValue):
         
         try:
+            #Find each item for the connected device
+            for item in self.device.Items:
                 
-                #Find each item for the connected device
-                for item in self.device.Items:
+                #Find each property for each item
+                for prop in item.Properties:
                     
-                    #Find each property for each item
-                    for prop in item.Properties:
+                    #Change both the horizontal and vertical dpi
+                    if prop.Name == WIA_HORIZONTAL_RESOLUTION or prop.Name == WIA_VERTICAL_RESOLUTION:
                         
-                        #Change both the horizontal and vertical dpi
-                        if prop.Name == WIA_HORIZONTAL_RESOLUTION or prop.Name == WIA_VERTICAL_RESOLUTION:
+                        #Changing dpi settings, see if we have a valid dpi property
+                        if self.scanDpi is not None:
+                            prop.Value = self.scanDpi
                             
-                            #Changing dpi settings, see if we have a valid dpi property
-                            if self.scanDpi is not None:
-                                prop.Value = self.scanDpi
-                                
-                            else:
-                                #Setting to default, 600 DPI
-                                prop.Value = DEFAULT_DPI
-                                
-                        #Change the horizontal and vertical extents (size) so we get the entire surface
-                        #of the scanner scanned instead of just a portion
-                        if prop.Name == WIA_HORIZONTAL_EXTENT:
+                        else:
+                            #Setting to default, 600 DPI
+                            prop.Value = DEFAULT_DPI
                             
-                            horBedSize = self._getHorizontalBedSize()
-                            
-                            horizontalExtent = int((horBedSize / SCALE_FACTOR) * float(dpiValue))
-                            
-                            prop.Value = horizontalExtent
-                            
-                        if prop.Name == WIA_VERTICAL_EXTENT:
-                            
-                            vertBedSize = self._getVerticalBedSize()
-                            
-                            verticalExtent = int((vertBedSize / SCALE_FACTOR) * float(dpiValue))
-                            
-                            prop.Value = verticalExtent
+                    #Change the horizontal and vertical extents (size) so we get the entire surface
+                    #of the scanner scanned instead of just a portion
+                    if prop.Name == WIA_HORIZONTAL_EXTENT:
+                        
+                        horBedSize = self._getHorizontalBedSize()
+                        
+                        horizontalExtent = int((horBedSize / SCALE_FACTOR) * float(dpiValue))
+                        
+                        prop.Value = horizontalExtent
+                        
+                    if prop.Name == WIA_VERTICAL_EXTENT:
+                        
+                        vertBedSize = self._getVerticalBedSize()
+                        
+                        verticalExtent = int((vertBedSize / SCALE_FACTOR) * float(dpiValue))
+                        
+                        prop.Value = verticalExtent
         except:
             print "Error trying to set dpi to value: %s...\nError: %s" % (dpiValue, sys.exc_info()[0])
                 
@@ -186,7 +185,8 @@ class Scanner():
                         self.setDPI(self.scanDpi)
                         
                         return True
-                    
+        else:
+            print "No devide manager?!"
         return False
     
     def connected(self):
@@ -200,7 +200,7 @@ class Scanner():
         
         try:
             self.device = self.wiaObject.ShowSelectDevice()
-            
+            print "HAVE DEVICE: %s" % (self.device)
             self.setDPI(self.scanDpi)
             
             return True
@@ -231,6 +231,14 @@ class Scanner():
                     return prop.Value
                 
         return -1
+    
+    #Return whether or not a scanner is currently connected
+    def connected(self):
+        
+        if self.device is not None:
+            return True
+        
+        return False
     
     #Enumerate through each item in the connected device's heirarchy and dump out all properties
     #that are found
