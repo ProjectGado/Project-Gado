@@ -1,47 +1,53 @@
 # Database requests
-WEIGHTED_ARTIFACT_SET_LIST = 0
-ARTIFACT_SET_LIST = 1
-ADD_ARTIFACT_SET_LIST = 2
-DELETE_ARTIFACT_SET_LIST = 3
+WEIGHTED_ARTIFACT_SET_LIST = 0 # RETURN (list)
+ARTIFACT_SET_LIST = 1 # RETURN (list)
+ADD_ARTIFACT_SET_LIST = 2 # RETURN (id)
+DELETE_ARTIFACT_SET_LIST = 3 # VOID
 
 # General robot commands
-START = 4
-STOP = 5
-LAST_ARTIFACT = 6
-RESET = 7
+START = 4   # shouldn't return
+STOP = 5    # No return   
+LAST_ARTIFACT = 6 # No return
+RESET = 7   # No return
 
 # Connection and pictures
-ROBOT_CONNECT = 8
+ROBOT_CONNECT = 8 # Return (boolean)
 
-SCANNER_PICTURE = 9
-SCANNER_CONNECT = 10
+SCANNER_PICTURE = 9 # RETURN (path)
+SCANNER_CONNECT = 10 # RETURN (boolean)
 
-WEBCAM_PICTURE = 11
-WEBCAM_CONNECT = 12
+WEBCAM_PICTURE = 11 # RETURN (path)
+WEBCAM_CONNECT = 12 # RETURN (boolean)
 
 # Manual robot controls
-MOVE_RIGHT = 13
-MOVE_LEFT = 14
-MOVE_UP = 15
-MOVE_DOWN = 16
+MOVE_RIGHT = 13 # RETURN (degree)
+MOVE_LEFT = 14 # RETURN (degree)
+MOVE_UP = 15 # RETURN (stroke)
+MOVE_DOWN = 16 # RETURN (stroke)
 
-DROP = 17
-LIFT = 18
+DROP = 17 # VOID
+LIFT = 18 # VOID
 
+# MISC
+SET_SELECTED_ARTIFACT_SET = 21 # VOID
+RELOAD_SETTINGS = 22 # VOID
+
+# Other misc
+LAUNCH_WIZARD = 23 # VOID
+READY = 24 # VOID
 
 # Returning values
 RETURN = 19 # returning useful stuff (like db info)
 UPDATE = 20 # providing an interface update, "Gado is currently XXXXX"
 
-
-# MISC
-SET_SELECTED_ARTIFACT_SET = 21
-RELOAD_SETTINGS = 22
-LAUNCH_WIZARD = 23
-READY = 24
-
-
 # GUI Messages
 SET_SCANNER_PICTURE = 25
 SET_WEBCAM_PICTURE = 26
 SET_STATUS_TEXT = 27
+DISPLAY_ERROR = 28
+DISPLAY_INFO = 29
+
+# Tells everyone to call exit()
+SYSTEM_ABANDON_SHIP = 30
+MAIN_ABANDON_SHIP = 31
+GUI_ABANDON_SHIP = 32

@@ -37,7 +37,6 @@ class Scanner():
             self.scannerName = kwargs['scanner_name']
         except:
             print "Error while instantiating scanner with passed settings...\nError: %s" % (sys.exc_info()[0])
-        
             
     ######  IT SEEMS LIKE THIS FUNCTION DOESN'T ACTUALLY DO ANYTHING... MIGHT CONSIDER TAKING IT OUT #####        
             
@@ -190,7 +189,7 @@ class Scanner():
         return False
     
     def connected(self):
-        return True
+        return self.connectToScannerGui()
     
     #Use Windows Image Aquisition's API to automatically pick the scanner to use
     #If there are multiple scanners available then a GUI pops up allowing the user to select one
@@ -231,14 +230,6 @@ class Scanner():
                     return prop.Value
                 
         return -1
-    
-    #Return whether or not a scanner is currently connected
-    def connected(self):
-        
-        if self.device is not None:
-            return True
-        
-        return False
     
     #Enumerate through each item in the connected device's heirarchy and dump out all properties
     #that are found

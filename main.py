@@ -18,31 +18,30 @@ from gado.gado_sys import GadoSystem
 from Tkinter import Tk
 from threading import Thread, Lock
 from Queue import Queue
+from gado.functions import fetch_from_queue
+import gado.messages as messages
 
 class GuiThread(Thread):
-    def __init__(self, tk, q, l):
-        self.tk = tk
-        self.q = q
-        self.l = l
+    def __init__(self, q_in, q_out):
+        self.q_in = q_in
+        self.q_out = q_out
         print "GuiThread\tcreating the gui"
-        self.gui = GadoGui(tk, q, l)
+        self.gui = GadoGui(q_in, q_out)
         Thread.__init__(self)
         
     def run(self):
         print "GuiThread\tloading GUI elements"
         self.gui.load()
-        print "GuiThread\tcalling tk.mainloop"
-        self.tk.mainloop()
         print "GuiThread\tcalling finished tk.mainloop"
         #self.gui.mainloop()
         exit()
 
 class LogicThread(Thread):
-    def __init__(self, q, l):
-        self.q = q
-        self.l = l
+    def __init__(self, q_in, q_out):
+        self.q_in = q_in
+        self.q_out = q_out
         print "LogicThread\tintializing GadoSystem"
-        self.gado_sys = GadoSystem(q, l)
+        self.gado_sys = GadoSystem(q_in, q_out)
         print "LogicThread\tcompleted intializing GadoSystem"
         Thread.__init__(self)
     
@@ -54,20 +53,18 @@ class LogicThread(Thread):
 if __name__ == '__main__':
     print "Initializing Gado Robot Management Interface"
     
-    q = Queue()
-    tk = Tk()
-    l = Lock()
-    l.acquire()
+    q_gui_to_sys = Queue()
+    q_sys_to_gui = Queue()
     
-    t1 = GuiThread(tk, q, l)
-    t2 = LogicThread(q, l)
+    t1 = GuiThread(q_sys_to_gui, q_gui_to_sys)
+    t2 = LogicThread(q_gui_to_sys, q_sys_to_gui)
     
-    l.release()
     t1.start()
-    l.acquire()
     t2.start()
-    l.release()
     
-    
+    #print 'main\tfetching MAIN_ABANDON_SHIP'
+    #msg = fetch_from_queue(q, messages.MAIN_ABANDON_SHIP)
+    #print 'main\tfetched MAIN_ABANDON_SHIP'
+    #exit()
     # It would be nice to check to see if the LogicThread ate it.
     

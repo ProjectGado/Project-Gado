@@ -154,6 +154,7 @@ class Robot(object):
         #Flush the serial line so we don't get any overflows in the event
         #that many commands are trying to be sent at once
         self.clearSerialBuffers()
+        return degree
         
     
     #Move the robot's actuator to the specified stroke
@@ -167,6 +168,7 @@ class Robot(object):
         #Flush the serial line so we don't get any overflows in the event
         #that many commands are trying to be sent at once
         self.clearSerialBuffers()
+        return stroke
         
         
     #Turn on the vacuum to the power level: value
@@ -188,7 +190,9 @@ class Robot(object):
         
     def lift(self):
         self._vacuumOn(True)
+        print 'lifting!'
         self.serialConnection.write("%s" % LOWER_AND_LIFT)
+        self.clearSerialBuffers()
         time.sleep(10)
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
@@ -229,6 +233,8 @@ class Robot(object):
     
     #Stop the robot process and reset
     def stop(self):
+        self._vacuumOn(0)
+        self._moveActuator(self.actuator_up_value)
         pass
     
     '''#Reset all aspects of the robot

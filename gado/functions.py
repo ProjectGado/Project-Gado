@@ -3,7 +3,7 @@ import json, os, datetime, time, sys
 from subprocess import Popen, PIPE
 
 
-def fetch_from_queue(q, l, message=None, timeout=None):
+def fetch_from_queue(q, message=None, timeout=None):
     
     start = datetime.datetime.now()
     while True:
@@ -23,16 +23,15 @@ def fetch_from_queue(q, l, message=None, timeout=None):
             raise Exception("message never received")
         '''
         msg = q.get()
-        print 'functions\tsomebody is fetching from queue:', msg
+        #print 'functions\tsomebody is fetching from queue:', msg
         if (message and msg[0] == message) or (not message):
             return msg
         else:
             q.put(msg)
-        time.sleep(0.1)
 
-def add_to_queue(q, l, message, arguments=None):
-    print 'functions\tsomebody is adding %s to queue with arguments: %s' % (message, str(arguments))
-    #time.sleep(1)
+def add_to_queue(q, message, arguments=None):
+    #print 'functions\tsomebody is adding %s to queue with arguments: %s' % (message, str(arguments))
+    time.sleep(1)
     q.put((message, arguments))
     pass
 
