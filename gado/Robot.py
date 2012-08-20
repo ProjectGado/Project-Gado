@@ -233,7 +233,8 @@ class Robot(object):
     
     #Stop the robot process and reset
     def stop(self):
-        self._vacuumOn(False)
+        self._vacuumOn(0)
+        self._moveActuator(self.actuator_up_value)
         pass
     
     '''#Reset all aspects of the robot
