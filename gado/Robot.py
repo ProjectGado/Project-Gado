@@ -120,19 +120,19 @@ class Robot(object):
         #self.serialConnection = False
         return False
     
-    def move_actuator(up):
+    def move_actuator(self, up):
         if up: # retracting the actuator moves it up
             n = self.current_actuator_value - 1
         else: # extending moves it down
             n = self.current_actuator_value + 1
-        self._moveActuator(n)
+        return self._moveActuator(n)
     
-    def move_arm(clockwise):
+    def move_arm(self, clockwise):
         if clockwise:
             n = self.current_arm_value + 1
         else:
             n = self.current_arm_value - 1
-        self._moveArm(n)
+        return self._moveArm(n)
     
     def drop_actuator(self):
         self._vacuumOn(True)
