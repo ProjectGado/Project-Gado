@@ -1,4 +1,4 @@
-import json, os, datetime, time
+import json, os, datetime, time, sys
 
 from subprocess import Popen, PIPE
 
@@ -70,8 +70,17 @@ def export_settings(**kwargs):
 def check_for_barcode(image_path, code='project gado'):
     args = ['lib\zbar\zbarimg.exe', '-q', image_path]
     cmd = ' '.join(args)
+    print "CMD: %s" % (cmd)
+    #Test code to make this runnable with py2exe
+    if hasattr(sys.stderr, 'fileno'):
+        procStdErr = sys.stderr
+    elif hasattr(sys.stderr, '_file') and hasattr(sys.stderr._file, 'fileno'):
+        proceStdErr = sys.stderr._file
+    else:
+        procStdErrPath = 'nul'
+        procStdErr = file(procStdErrPath, 'a')
     
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
+    proc = Popen(cmd, stdout=PIPE, stderr=procStdErr, shell=True)
     output, errors = proc.communicate()
     output = str(output)
     print "barcode was %sfound" % ('' if output.find(code) >= 0 else 'not ')
