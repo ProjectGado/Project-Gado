@@ -1,4 +1,5 @@
 from Tkinter import *
+import tkFileDialog
 import ttk
 import tkFont
 from gado.functions import *
@@ -94,6 +95,9 @@ class Wizard():
         
         self.keyboardCallbacks = dict()
         
+        frame, next_btn = self._frame_image_path()
+        frameList.append(frame)
+        nextButtons.append(next_btn)
         
         frame, next_btn = self._frame_welcome()
         frameList.append(frame)
@@ -271,22 +275,39 @@ class Wizard():
         
         return (frame, doneQuitButton)
     
-    def _image_box(self, image):
+    def _frame_image_path(self):
         frame = ttk.Frame(self.window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
         frame.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W)
         
-        label = Label(frame, text=label_text, font=self.labelFont)
+        label = Label(frame, text='Where should images be saved?', font=self.labelFont)
         label.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W, columnspan=2)
         
-        text = Text(frame, height=text_height, width=TEXT_WIDTH, wrap=WORD, font=self.textFont)
-        text.insert(END, main_text)
-        text.config(state=DISABLED)
-        text.grid(column=0, row=1, columnspan=2, padx=10, pady=20,sticky=N+S+E+W)
+        name_textbox = Entry(frame)
+        name_textbox.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        self.name_textbox = name_textbox
+        name_textbox.config(state=DISABLED)
         
-        self.image_root = Tk()
-        self.tkimage = ImageTk.PhotoImage(image)
-        Label(self.image_root, image=self.tkimage).pack()
-        self.image_root.mainloop()
+        button = Button(frame, text = "Browse", command = self.loadtemplate, width = 10)
+        button.grid(column = 1, row = 1, padx = 10, pady = 5, sticky = N+S+E+W)
+        
+        nextButton = self.nextButton(frame)
+        prevButton = self.prevButton(frame)
+        
+        nextButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        prevButton.grid(column = 0, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        
+        return (frame, nextButton)
+    
+    def loadtemplate(self):
+        dirname = tkFileDialog.askdirectory(parent=self.root,
+                                            initialdir=".",
+                                            title='Please select a directory')
+        print 'Wizard\tGot a directory name!'
+        self.name_textbox.config(state=NORMAL)
+        self.name_textbox.delete(0, 'end')
+        self.name_textbox.insert('end', dirname)
+        self.name_textbox.config(state=DISABLED)
+        export_settings(image_path=dirname)
     
     def nextFrame(self):
         print 'Wizard\tnextFrame() called'
