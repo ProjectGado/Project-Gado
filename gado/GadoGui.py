@@ -39,7 +39,7 @@ class GuiListener(Thread):
                 add_to_queue(self.gui_q, messages.DISPLAY_INFO, msg[1])
             elif msg[0] == messages.GUI_ABANDON_SHIP:
                 self.gui.root.destroy()
-                exit()
+                sys.exit()
             elif msg[0] == messages.GUI_LISTENER_DIE:
                 return
             else:
@@ -75,9 +75,9 @@ class GadoGui(Frame):
             #self.wizard.load()
             #print 'GadoGui\twizard.load() returned'
         
-        self.manage_sets = ManageSets(self.root, self.q_in, self.q_out)
+        self.manage_sets = ManageSets(self.root, self.q_in, self.q_out, self.gui_q)
         self.selected_set = None
-        self.config_window = ConfigurationWindow(self.root, self.q_in, self.q_out)
+        self.config_window = ConfigurationWindow(self.root, self.q_in, self.q_out, self.gui_q)
         self.wizard = Wizard(self.root, self.q_in, self.q_out, self.gui_q)
         
         #Create all menus for application
@@ -137,8 +137,8 @@ class GadoGui(Frame):
     def createSettingsMenu(self, menubar=None, master=None):
         
         self.settingsMenu = Menu(self.menubar, tearoff=0)
-        self.settingsMenu.add_command(label="Configure Layout", command=self.config_window.show)
-        self.settingsMenu.add_command(label="Launch Wizard", command=self.wizard.load)
+        self.settingsMenu.add_command(label="Configure Layout", command=self.show_configuration_window)
+        self.settingsMenu.add_command(label="Launch Wizard", command=self.show_wizard)
         return self.settingsMenu
     
     def tkloop(self):
@@ -159,6 +159,8 @@ class GadoGui(Frame):
                     self.changeWebcamImage(msg[1])
                 elif msg[0] == messages.SET_SCANNER_PICTURE:
                     self.changeScannedImage(msg[1])
+                elif msg[0] == messages.REFRESH:
+                    self._refresh()
         except:
             pass
         self.root.after(100, self.tkloop)
@@ -196,8 +198,20 @@ class GadoGui(Frame):
         # Add the button to create a new artifact set
         new_set_button = Button(self)
         new_set_button["text"] = "New Artifact Set"
-        new_set_button["command"] = self.manage_sets.show
+        new_set_button["command"] = self.show_manage_sets
         new_set_button.grid(row=1, column=1, sticky=N+S+E+W, padx=10, pady=5, columnspan=1)
+    
+    def show_manage_sets(self):
+        add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
+        self.manage_sets.show()
+    
+    def show_configuration_window(self):
+        add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
+        self.config_window.show()
+        
+    def show_wizard(self):
+        add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
+        self.wizard.show()
     
     def set_selected_set(self, a):
         idx = self.set_dropdown.curselection()[0]

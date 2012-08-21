@@ -48,15 +48,14 @@ class Robot(object):
             self.actuator_up_value = kwargs['actuator_up_value']
             self.baudrate = kwargs['baudrate']
         except:
-            print "Error when trying to update robot settings... (Make sure all settings were passed)\n Error: %s" % sys.exc_info()[0]
+            print "Robot\tError when trying to update robot settings... (Make sure all settings were passed)\n Error: %s" % sys.exc_info()[0]
         
     def returnGadoInfo(self):
         if self.serialConnection.isOpen():
+            self.clearSerialBuffers()
             self.serialConnection.write(RETURN_CURRENT_SETTINGS)
-            
-            #Read back response, if any
+            time.sleep(0.1)
             response = self.serialConnection.read(1000)
-            
             return response
         else:
             return ""
@@ -71,14 +70,14 @@ class Robot(object):
             self.serialConnection = serial.Serial(port, self.baudrate, timeout=1)
         except:
             #raise
-            print "ERROR CONNECTING TO SERIAL PORT: %s. Error: %s" % (port, sys.exc_info()[0])
+            print "Robot\tERROR CONNECTING TO SERIAL PORT: %s. Error: %s" % (port, sys.exc_info()[0])
             return False
         
         #Delay for 2 seconds because pyserial can't immediately communicate
         time.sleep(2)
         
         if self.serialConnection.isOpen():
-            print "Inside robot connect"
+            print "Robot\tInside robot connect"
             #Initiate the handshake with the (potential) robot
             self.serialConnection.flush()
             self.serialConnection.flushInput()
@@ -91,7 +90,7 @@ class Robot(object):
             #Read back response (if any) and check to see if it matches the expected value
             response = self.serialConnection.read(100)
             
-            print "response: \"%s\"" % response
+            print "Robot\tresponse: \"%s\"" % response
             
             if response.find(HANDSHAKE_VALUE) >= 0:
                 self._moveArm(self.arm_home_value)
@@ -112,7 +111,7 @@ class Robot(object):
             
             #Read back response from (tentative) robot
             response = self.serialConnection.read(200)
-            print "Got serial response: %s, with port %s and baud %s" % (response, self.serialConnection.port, self.serialConnection.baudrate)
+            print "Robot\tGot serial response: %s, with port %s and baud %s" % (response, self.serialConnection.port, self.serialConnection.baudrate)
             
             if response.find(HANDSHAKE_VALUE) >= 0:
                 return True
@@ -190,37 +189,41 @@ class Robot(object):
         
     def lift(self):
         self._vacuumOn(True)
-        print 'lifting!'
+        print 'Robot\tlifting!'
         self.serialConnection.write("%s" % LOWER_AND_LIFT)
         self.clearSerialBuffers()
-        time.sleep(10)
+        for i in range(10):
+            print 'Robot\iteration %s' % i
+            resp = self.returnGadoInfo()
+            print resp
+            time.sleep(1)
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware
     def pickUpObject(self):
-        print "moving arm to in pile"
+        print "Robot\tmoving arm to in pile"
         self._moveArm(self.arm_in_value)
         time.sleep(5)
-        print 'turning on vacuum'
+        print 'Robot\tturning on vacuum'
         self.lift()
-        print 'hopefully successfully picked up!'
+        print 'Robot\thopefully successfully picked up!'
         return True
     
     def scanObject(self):
-        print 'moving to home value'
+        print 'Robot\tmoving to home value'
         self._moveArm(self.arm_home_value)
         time.sleep(5)
-        print 'dropping actuator'
+        print 'Robot\tdropping actuator'
         self._moveActuator(self.actuator_home_value)
         time.sleep(5)
-        print 'done dropping on scanner??'
+        print 'Robot\tdone dropping on scanner??'
         return True
         
     def moveToOut(self):
-        print 'lifting actuator up'
+        print 'Robot\tlifting actuator up'
         self._moveActuator(self.actuator_up_value)
         time.sleep(5)
-        print 'moving to out pile'
+        print 'Robot\tmoving to out pile'
         self._moveArm(self.arm_out_value)
         time.sleep(5)
         self._vacuumOn(0)
@@ -228,7 +231,7 @@ class Robot(object):
     
     #Pause the robot in its current step
     def pause(self):
-        print "I'm paused inside the Robot object"
+        print "Robot\tI'm paused inside the Robot object"
         pass
     
     #Stop the robot process and reset
