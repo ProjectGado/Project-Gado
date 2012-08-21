@@ -36,7 +36,8 @@ class AutoConnectThread(Thread):
 DEFAULT_SETTINGS = {'baudrate' :115200,
                     "db_directory": "databases",
                     "db_filename": "db.sqlite",
-                    "image_path": "images"}
+                    "image_path": "images",
+                    'wizard_run' : 0}
 
 DEFAULT_SCANNED_IMAGE = 'scanned.tiff'
 DEFAULT_CAMERA_IMAGE = 'backside.jpg'
@@ -46,15 +47,18 @@ class GadoSystem():
     def __init__(self, q_in, q_out):
         self.q_in = q_in
         self.q_out = q_out
-        try:
-            settings = import_settings()
-        except:
+        settings = import_settings()
+        if 'wizard_run' in settings:
+            print 'gado_sys\twizard_run in settings %s' % (settings['wizard_run'])
+        if not settings:
+            print "gado_sys\tNo pre-existing settings detected"
             export_settings(**DEFAULT_SETTINGS)
-            
-            # We're going to launch the wizard!
-            # It's going to save stuff.
-            
-            settings = import_settings()
+            add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
+        elif 'wizard_run' in settings and int(settings['wizard_run']) == 0:
+            print "gado_sys\tThe wizard was never run (at least to completion)"
+            add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
+        else:
+            add_to_queue(self.q_out, messages.READY)
         
         self.tk = Tk
         self.scanner = Scanner(**settings)
@@ -62,7 +66,7 @@ class GadoSystem():
         self.db = DBFactory(**settings).get_db()
         self.dbi = DBInterface(self.db)
         self.camera = Webcam(**settings)
-        self._load_settings()
+        self._load_settings(**settings)
         
         self.selected_set = None
         self.started = False
@@ -171,8 +175,6 @@ class GadoSystem():
 
                 elif msg[0] == messages.WEBCAM_CONNECT:
                     expecting_return = True
-                    del self.camera
-                    self.camera = Webcam(**import_settings())
                     add_to_queue(q, messages.RETURN, self.camera.connected())
 
                 elif msg[0] == messages.WEBCAM_PICTURE:
@@ -185,19 +187,22 @@ class GadoSystem():
                     li = self.dbi.weighted_artifact_set_list()
                     add_to_queue(q, messages.RETURN, arguments=li)
                 elif msg[0] == messages.MAIN_ABANDON_SHIP:
-                    exit()
+                    add_to_queue(q, messages.GUI_LISTENER_DIE)
+                    return
                 elif msg[0] == messages.STOP or msg[0] == messages.LAST_ARTIFACT or msg[0] == messages.RESET:
                     # These commands are only relevant if the robot is already running.
                     expecting_return = False
                     pass
+                elif msg[0] == messages.GIVE_ME_A_ROBOT:
+                    add_to_queue(q, messages.RETURN, self.robot)
                 else:
                     # add it back to the in queue, was somebody else waiting for that message?
                     add_to_queue(self.q_in, msg[0], (msg[1] if len(msg) > 1 else None))
             except:
                 print "EXCEPTION GENERATED"
-                if expecting_return:
-                    add_to_queue(q, message.RETURN)
                 raise
+                if expecting_return:
+                    add_to_queue(q, messages.RETURN)
     
     def set_seletcted_set(self, set_id):
         self.selected_set = None
@@ -295,7 +300,9 @@ class GadoSystem():
         elif msg[0] == messages.START:
             add_to_queue(self.q_out, messages.DISPLAY_INFO, 'The robot is already running. If it is not, then please restart this application.')
         elif msg[0] == messages.SYSTEM_ABANDON_SHIP:
-            exit()
+            self.robot.stop()
+            add_to_queue(self.q_in, msg[0])
+            raise Exception('Application Terminating')
         else:
             add_to_queue(self.q_out, msg[0], (msg[1] if len(msg) > 1 else None))
         return True

@@ -14,6 +14,7 @@ from gado.gui.ConfigurationWindow import ConfigurationWindow
 import gado.messages as messages
 from threading import Thread
 from Queue import Queue
+from gado.gui.Wizard import Wizard
 
 class GuiListener(Thread):
     def __init__(self, q, gui_q, gui):
@@ -22,14 +23,6 @@ class GuiListener(Thread):
         self.gui = gui
         Thread.__init__(self)
     
-    def showErrorMessage(self, text):
-        print 'calling tkMessageBox.showError with text "%s"' % text
-        tkMessageBox.showerror("Error", text)
-        print 'and there went that call.'
-    
-    def showInfoMessage(self, text):
-        tkMessageBox.showinfo("Info", text)
-
     def run(self):
         while True:
             msg = fetch_from_queue(self.q)
@@ -47,6 +40,8 @@ class GuiListener(Thread):
             elif msg[0] == messages.GUI_ABANDON_SHIP:
                 self.gui.root.destroy()
                 exit()
+            elif msg[0] == messages.GUI_LISTENER_DIE:
+                return
             else:
                 add_to_queue(self.q, msg[0], (msg[1] if len(msg) > 1 else None))
 
@@ -69,13 +64,21 @@ class GadoGui(Frame):
         self.gui_q = Queue()
         self.t1 = GuiListener(q_in, self.gui_q, self)
         self.root = Tk()
+        self.root.protocol('WM_DELETE_WINDOW', self.destroy)
         #Initialize the master frame
         Frame.__init__(self, self.root)
     
-    def load(self):        
+    def load(self):
+            #print 'GadoGui\ttelling root to withdraw'
+            #self.root.withdraw()
+            #print 'GadoGui\ttelling wizard to load'
+            #self.wizard.load()
+            #print 'GadoGui\twizard.load() returned'
+        
         self.manage_sets = ManageSets(self.root, self.q_in, self.q_out)
         self.selected_set = None
         self.config_window = ConfigurationWindow(self.root, self.q_in, self.q_out)
+        self.wizard = Wizard(self.root, self.q_in, self.q_out, self.gui_q)
         
         #Create all menus for application
         self.createMenus(self.root)
@@ -84,8 +87,17 @@ class GadoGui(Frame):
         self.pack()
         self.createWidgets()
         
-        self.t1.start()
+        msg = fetch_from_queue(self.q_in)
         self.tkloop()
+        if msg[0] == messages.LAUNCH_WIZARD:
+            print 'GadoGui\tabout to launch the wizard!'
+            
+            print 'GadoGui\tadding launch wizrd to the gui queue'
+            add_to_queue(self.gui_q, messages.LAUNCH_WIZARD)
+            self.wizard.load()
+        
+        add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
+        self.t1.start()
         self.root.mainloop()
         
     #################################################################################
@@ -126,18 +138,27 @@ class GadoGui(Frame):
         
         self.settingsMenu = Menu(self.menubar, tearoff=0)
         self.settingsMenu.add_command(label="Configure Layout", command=self.config_window.show)
-        
+        self.settingsMenu.add_command(label="Launch Wizard", command=self.wizard.load)
         return self.settingsMenu
     
     def tkloop(self):
         try:
             while True:
                 msg = self.gui_q.get_nowait()
-                print 'GadoGui\msg:', msg
+                print 'GadoGui\tmsg:', msg
                 if msg[0] == messages.DISPLAY_ERROR:
                     tkMessageBox.showerror("Error", msg[1])
                 elif msg[0] == messages.DISPLAY_INFO:
                     tkMessageBox.showinfo("Info", msg[1])
+                elif msg[0] == messages.LAUNCH_WIZARD:
+                    self.wizard.load()
+                elif msg[0] == messages.RELAUNCH_LISTENER:
+                    self.t1 = GuiListener(self.q_in, self.gui_q, self)
+                    self.t1.start()
+                elif msg[0] == messages.SET_WEBCAM_PICTURE:
+                    self.changeWebcamImage(msg[1])
+                elif msg[0] == messages.SET_SCANNER_PICTURE:
+                    self.changeScannedImage(msg[1])
         except:
             pass
         self.root.after(100, self.tkloop)
@@ -252,8 +273,11 @@ class GadoGui(Frame):
     
     def destroy(self):
         #add_to_queue(self.q, messages.SYSTEM_ABANDON_SHIP)
+        print 'GadoGui\tAdded ABANDON SHIP to the queue'
         add_to_queue(self.q_out, messages.MAIN_ABANDON_SHIP)
-        self.root.destroy()
+        add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
+        print 'GadoGui\tCalling root.destroy()'
+        sys.exit()
         
     #################################################################################
     #####                           FUNCTION WRAPPERS                           #####
