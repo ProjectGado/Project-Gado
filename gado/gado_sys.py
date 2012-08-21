@@ -36,7 +36,7 @@ class AutoConnectThread(Thread):
 DEFAULT_SETTINGS = {'baudrate' :115200,
                     "db_directory": "databases",
                     "db_filename": "db.sqlite",
-                    "image_path": "images",
+                    "image_path": "images/",
                     'wizard_run' : 0}
 
 DEFAULT_SCANNED_IMAGE = 'scanned.tiff'
@@ -44,7 +44,7 @@ DEFAULT_CAMERA_IMAGE = 'backside.jpg'
 
 class GadoSystem():
     
-    def __init__(self, q_in, q_out):
+    def __init__(self, q_in, q_out, recovered=False):
         self.q_in = q_in
         self.q_out = q_out
         settings = import_settings()
@@ -53,12 +53,12 @@ class GadoSystem():
         if not settings:
             print "gado_sys\tNo pre-existing settings detected"
             export_settings(**DEFAULT_SETTINGS)
-            add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
+            if not recovered: add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
         elif 'wizard_run' in settings and int(settings['wizard_run']) == 0:
             print "gado_sys\tThe wizard was never run (at least to completion)"
-            add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
+            if not recovered: add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
         else:
-            add_to_queue(self.q_out, messages.READY)
+            if not recovered: add_to_queue(self.q_out, messages.READY)
         
         self.tk = Tk
         self.scanner = Scanner(**settings)
@@ -162,7 +162,7 @@ class GadoSystem():
                 
                 elif msg[0] == messages.SCANNER_PICTURE:
                     expecting_return = True
-                    self.scanner.scanImage2(DEFAULT_SCANNED_IMAGE)
+                    self.scanner.scanImage(DEFAULT_SCANNED_IMAGE)
                     add_to_queue(q, messages.RETURN, DEFAULT_SCANNED_IMAGE)
 
                 elif msg[0] == messages.SET_SELECTED_ARTIFACT_SET:
@@ -188,6 +188,7 @@ class GadoSystem():
                     add_to_queue(q, messages.RETURN, arguments=li)
                 elif msg[0] == messages.MAIN_ABANDON_SHIP:
                     add_to_queue(q, messages.GUI_LISTENER_DIE)
+                    add_to_queue(self.q_in, messages.MAIN_ABANDON_SHIP)
                     return
                 elif msg[0] == messages.STOP or msg[0] == messages.LAST_ARTIFACT or msg[0] == messages.RESET:
                     # These commands are only relevant if the robot is already running.
@@ -350,7 +351,7 @@ class GadoSystem():
             
             print "attempting to scan"
             completed = self._checkMessages() & completed
-            self.scanner.scanImage2(DEFAULT_SCANNED_IMAGE)
+            self.scanner.scanImage(DEFAULT_SCANNED_IMAGE)
             os.rename(DEFAULT_SCANNED_IMAGE, front_fn)
             add_to_queue(self.q_out, messages.SET_SCANNER_PICTURE, front_fn)
             image_id = self.dbi.add_image(artifact_id, front_fn, True)

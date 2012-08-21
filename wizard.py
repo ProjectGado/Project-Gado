@@ -460,7 +460,8 @@ def testPickUp():
 ###############################################################################
 
 #Create the root of the wizard
-root = Tk()
+tk = Tk()
+root = Toplevel(tk)
 
 #Define our custom fonts
 labelFont = tkFont.Font(family = "Helvetica", size = 14)
@@ -544,5 +545,6 @@ else:
 
 root.title("Gado Configuration Wizard")
 
+tk.withdraw()
 #Start wizard
-root.mainloop()
+tk.mainloop()
