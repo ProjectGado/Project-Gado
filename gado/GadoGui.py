@@ -155,6 +155,10 @@ class GadoGui(Frame):
                 elif msg[0] == messages.RELAUNCH_LISTENER:
                     self.t1 = GuiListener(self.q_in, self.gui_q, self)
                     self.t1.start()
+                elif msg[0] == messages.SET_WEBCAM_PICTURE:
+                    self.changeWebcamImage(msg[1])
+                elif msg[0] == messages.SET_SCANNER_PICTURE:
+                    self.changeScannedImage(msg[1])
         except:
             pass
         self.root.after(100, self.tkloop)

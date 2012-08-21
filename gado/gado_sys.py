@@ -36,7 +36,8 @@ class AutoConnectThread(Thread):
 DEFAULT_SETTINGS = {'baudrate' :115200,
                     "db_directory": "databases",
                     "db_filename": "db.sqlite",
-                    "image_path": "images"}
+                    "image_path": "images",
+                    'wizard_run' : 0}
 
 DEFAULT_SCANNED_IMAGE = 'scanned.tiff'
 DEFAULT_CAMERA_IMAGE = 'backside.jpg'
@@ -47,9 +48,14 @@ class GadoSystem():
         self.q_in = q_in
         self.q_out = q_out
         settings = import_settings()
+        if 'wizard_run' in settings:
+            print 'gado_sys\twizard_run in settings %s' % (settings['wizard_run'])
         if not settings:
-            print "No pre-existing settings detected"
+            print "gado_sys\tNo pre-existing settings detected"
             export_settings(**DEFAULT_SETTINGS)
+            add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
+        elif 'wizard_run' in settings and int(settings['wizard_run']) == 0:
+            print "gado_sys\tThe wizard was never run (at least to completion)"
             add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
         else:
             add_to_queue(self.q_out, messages.READY)

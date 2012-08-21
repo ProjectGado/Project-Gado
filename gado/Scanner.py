@@ -37,72 +37,14 @@ class Scanner():
             self.scannerName = kwargs['scanner_name']
         except:
             print "Error while instantiating scanner with passed settings...\nError: %s" % (sys.exc_info()[0])
-            
-    ######  IT SEEMS LIKE THIS FUNCTION DOESN'T ACTUALLY DO ANYTHING... MIGHT CONSIDER TAKING IT OUT #####        
-            
-    #Tell the scanner to scan a copy of whatever is currently on the scanner surface
-    #This scan is stored on the scanner until transferImage is called, telling it where to save
-    #on the local machine
-    def scan(self, dirName, imageName):
-        
-        transferred = True
-        
-        try:
-            for command in self.device.Commands:
-                print "Command: %s" % command.Name
-                if command.CommandID == WIA_COMMAND_TAKE_PICTURE:
-                    print "here!"
-                    self.device.ExecuteCommand(WIA_COMMAND_TAKE_PICTURE)
-                    print "Told scanner to scan"
-                    #Transfer the image
-                    #transferred = self._transferImage(dirName, imageName)
-                    
-            return transferred
-        
-        except:
-            print "Error trying to scan image...\nError: %s" % str(sys.exc_info())
-            
-            return False
-    
+       
     #Take the last image scanned on the scanner and transfer it to the local computer
     #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)
-    def scanImage(self, dirName, imageName):
+    def scanImage(self, imageName, overwrite=True):
         
-        #If the DPI hasn't yet been set, then set it
-        if self.scanDpi is None:
-            self.setDPI(DEFAULT_DPI)
-            
-        try:
-            #Transfer the raw image data from the scanner to the local computer
-            image = self.device.Items[self.device.Items.count].Transfer(WIA_IMG_FORMAT_PNG)
-            
-            #Chdir to specified dir (if exists) and save the file as the passed name
-            #If file already exists, it will be overwritten
-            
-            #see if dir exists
-            if os.path.exists(dirName):
-                #Dir exists, chdir and see if image exists
-                os.chdir(dirName)
-                
-                if os.path.exists(imageName):
-                    os.remove(imageName)
-                
-                #Actually save the image
-                image.SaveFile(imageName)
-                
-                return True
-            
-            else:
-                print "File path does not exist, please check again..."
-                
-        except:
-            print "Error while transferring image from scanner to computer...\nError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
-    
-        return False
-    
-    #Take the last image scanned on the scanner and transfer it to the local computer
-    #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)
-    def scanImage2(self, imageName):
+        if overwrite:
+            try: os.remove(imageName) # try deleting it
+            except: pass # file didn't exist. oh well.
         
         #If the DPI hasn't yet been set, then set it
         if self.scanDpi is None:

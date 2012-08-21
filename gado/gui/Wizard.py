@@ -5,6 +5,7 @@ from gado.functions import *
 import time
 from threading import Thread
 import gado.messages as messages
+import Image, ImageTk
 
 #Constants
 WINDOW_HEIGHT = 300
@@ -12,33 +13,6 @@ WINDOW_WIDTH = 450
 
 TEXT_HEIGHT = 10
 TEXT_WIDTH = 50
-
-#Globals
-_lastTime = 0
-currentFrame = None
-configuringArm = False
-firstConf = True
-
-#vars for enabling changing of state in GUI
-welcomeDone = False
-scannerDone = False
-webcamDone = False
-locationDone = False
-pickupDone = False
-
-#Next buttons so we can globally control their state
-welcomeNextButton = None
-reqNextButton = None
-scannerNextButton = None
-webcamNextButton = None
-locationNextButton = None
-pickupNextButton = None
-
-#variables that will get pushed into the conf file when all is said and done
-settings = {'arm_home_value' : 0, 'arm_in_value' : 0, 'arm_out_value' : 0, 'baudrate' : 115200\
-            ,'scan_dpi' : 600, 'scanner_name' : None, 'actuator_home_value' : 0,\
-            'actuator_up_value' : 25, 'handshake' : 'Im a robot!', 'db_dicitonary' : 'databases'\
-            ,'db_filename' : 'db.sqlite', 'image_path' : "images"}
 
 class WizardQueueListener(Thread):
     def __init__(self, q_in, q_out, message, args, callback):
@@ -54,19 +28,35 @@ class WizardQueueListener(Thread):
         msg = fetch_from_queue(self.q_in)
         self.callback(msg)
         
-class WizardLocationListener(Thread):
-    def __init__(self, wizard, q_in):
-        self.q_in = q_in
-        self.wizard = wizard
-        Thread.__init__(self)
+class ImageSampleViewer(Frame):
+    def __init__(self, root, path):
+        self.path = path
+        self.root = root
+        Frame.__init__(self, self.root)
+                
+        print 'ImageSampleViewer\tOpening image'
+        image = Image.open(path)
+        print 'ImageSampleViewer\tResizing image'
+        image.thumbnail((500, 500), Image.ANTIALIAS)
+        
+        print 'ImageSampleViewer\tPhotoImage(image)'
+        image_tk = ImageTk.PhotoImage(image)
+        print 'ImageSampleViewer\tCreating the image\'s label'
+        image_label = Label(self, image=image_tk)
+        print 'ImageSampleViewer\tAssiging image_tk to .photo'
+        image_label.photo = image_tk
+        print 'ImageSampleViewer\tAdding the label to the grid'
+        image_label.grid(row=0, column = 0, sticky=N+S+E+W, padx=10, pady=5)
+        
+        print 'ImageSampleViewer\tSetting up window closing protocol'
+        window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
+        print 'ImageSampleViewer\tWithdrawing the window'
+        window.withdraw()
+        print 'ImageSampleViewer\t__init__ completed'
     
-    def run(self):
-        while True:
-            msg = fetch_from_queue(self.q_in)
-            if msg[0] == messages.WIZARD_ABANDON_SHIP:
-                return
-            elif msg[1] == messages.RETURN:
-                self.wizard.registerMovement(msg[1])
+    def show():
+        self.window.deiconify()
+    
 
 IN_PILE = 'Documents to be Scanned Pile'
 OUT_PILE = 'Scanned Documents Pile'
@@ -108,7 +98,6 @@ class Wizard():
         frame, next_btn = self._frame_welcome()
         frameList.append(frame)
         nextButtons.append(next_btn)
-        '''
         
         frame, next_btn = self._frame_requirements()
         frameList.append(frame)
@@ -120,14 +109,12 @@ class Wizard():
         frame, next_btn = self._frame_peripheral('webcam')
         frameList.append(frame)
         nextButtons.append(next_btn)
-        '''
         
         frame, next_btn = self._frame_location(IN_PILE)
         frameList.append(frame)
         nextButtons.append(next_btn)
         self.keyboardCallbacks[len(frameList) - 1] = 'arm_in_value'
         
-        '''
         frame, next_btn = self._frame_location(SCANNER)
         frameList.append(frame)
         nextButtons.append(next_btn)
@@ -143,99 +130,16 @@ class Wizard():
         nextButtons.append(next_btn)
         self.keyboardCallbacks[len(frameList) - 1] = 'arm_out_value'
         
-        '''
         frame, next_btn = self._frame_done()
         frameList.append(frame)
         nextButtons.append(next_btn)
         
         self.currentFrame = frame
         self.frame_idx = -1
-        self.locationThread = None
         #self.nextFrame()
         
-        window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
+        window.protocol("WM_DELETE_WINDOW", self._quit)
         window.withdraw()
-        
-        '''
-        welcomeFrame = ttk.Frame(window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        welcomeFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        frameList.append(welcomeFrame)
-        self.welcomeFrame = welcomeFrame
-        
-        
-        #Create the requirments frame
-        requirementsFrame = ttk.Frame(window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        requirementsFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        frameList.append(requirementsFrame)
-        self.requirementsFrame = requirementsFrame
-        
-        #Create the scanner frame
-        scannerFrame = ttk.Frame(window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        scannerFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        frameList.append(scannerFrame)
-        self.scannerFrame = scannerFrame
-        
-        #Create the webcam frame
-        webcamFrame = ttk.Frame(window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        webcamFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        frameList.append(webcamFrame)
-        self.webcamFrame = webcamFrame
-        
-        #Create the location frame
-        locationFrame = ttk.Frame(window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        locationFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        frameList.append(locationFrame)
-        self.locationFrame = locationFrame
-        
-        #Create frame to test the actuator's ability to pick up document
-        pickUpFrame = ttk.Frame(window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        pickUpFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        frameList.append(pickUpFrame)
-        self.pickUpFrame = pickUpFrame
-        
-        '''
-        #Create frame to test scanner
-        #scannerTestFrame = ttk.Frame(root, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        #scannerTestFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        #frameList.append(scannerTestFrame)
-        '''
-        
-        #Finished frame
-        doneFrame = ttk.Frame(window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
-        doneFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
-        frameList.append(doneFrame)
-        self.doneFrame = doneFrame
-        
-        #Create all widgets for all frames
-        self.createWelcomeWidgets()
-        self.createRequirementsWidgets()
-        self.createScannerWidgets()
-        self.createWebcamWidgets()
-        self.createLocationWidgets()
-        self.createPickUpWidgets()
-        #createScanTestWidgets()
-        self.createDoneWidgets()
-        
-        #Forget all frames but the welcome one
-        self.bringToFront(welcomeFrame)
-        
-        
-        #We need to toggle the state of the next button for the welcomeFrame depending on welcomeDone
-        if welcomeDone:
-            welcomeNextButton.config(state=NORMAL)
-        else:
-            welcomeNextButton.config(state=DISABLED)
-        '''
-        #Create all gado specific objects/variables
-        #gado = Robot(None, None, None, None, DEFAULT_BAUD_RATE, None)
-        
-        #Init the gado system with most vars as none (We don't need them at this point, would just be more overhead)
-        #gado_sys = GadoSystem(None, gado, root, None)
-        
-        #window.title("Gado Configuration Wizard")
-        
-        #Start wizard
-        #window.mainloop()
     
     def load(self):
         for frame in self.frameList:
@@ -250,14 +154,14 @@ class Wizard():
     ###                             WIDGET FUNCTIONS                           ###
     ##############################################################################
     
-    def emptyFrame(self, label_text, main_text):
+    def emptyFrame(self, label_text, main_text, text_height = TEXT_HEIGHT):
         frame = ttk.Frame(self.window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
         frame.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W)
         
         label = Label(frame, text=label_text, font=self.labelFont)
         label.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W, columnspan=2)
         
-        text = Text(frame, height=TEXT_HEIGHT, width=TEXT_WIDTH, wrap=WORD, font=self.textFont)
+        text = Text(frame, height=text_height, width=TEXT_WIDTH, wrap=WORD, font=self.textFont)
         text.insert(END, main_text)
         text.config(state=DISABLED)
         text.grid(column=0, row=1, columnspan=2, padx=10, pady=20,sticky=N+S+E+W)
@@ -310,16 +214,22 @@ class Wizard():
         text = "\n\nWe're going to try to figure out which %s to use\
                 \n\nMake sure that your %s is connected to your computer and that all necessary drivers are installed" % (p_type.lower(), p_type.lower())
         label = 'Connect to %s' % p_type.capitalize()
-        frame = self.emptyFrame(label, text)
+        frame = self.emptyFrame(label, text, text_height=TEXT_HEIGHT - 2)
         
         if 'scanner' in p_type.lower():
             funct = self.connectToScanner
+            funct_2 = self.displayScannerSample
         elif 'webcam' in p_type.lower():
             funct = self.connectToWebcam
+            funct_2 = self.displayWebcamSample
         
         connect = Button(frame, text = "Locate %s" % (p_type.capitalize()),
                          command = funct)
         connect.grid(column = 0, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
+        
+        sample = Button(frame, text = "Take Sample Picture",
+                         command = funct_2)
+        sample.grid(column = 1, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         
         nextButton = self.nextButton(frame)
         prevButton = self.prevButton(frame)
@@ -361,12 +271,25 @@ class Wizard():
         
         return (frame, doneQuitButton)
     
+    def _image_box(self, image):
+        frame = ttk.Frame(self.window, width = WINDOW_WIDTH, height = WINDOW_HEIGHT)
+        frame.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W)
+        
+        label = Label(frame, text=label_text, font=self.labelFont)
+        label.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W, columnspan=2)
+        
+        text = Text(frame, height=text_height, width=TEXT_WIDTH, wrap=WORD, font=self.textFont)
+        text.insert(END, main_text)
+        text.config(state=DISABLED)
+        text.grid(column=0, row=1, columnspan=2, padx=10, pady=20,sticky=N+S+E+W)
+        
+        self.image_root = Tk()
+        self.tkimage = ImageTk.PhotoImage(image)
+        Label(self.image_root, image=self.tkimage).pack()
+        self.image_root.mainloop()
+    
     def nextFrame(self):
         print 'Wizard\tnextFrame() called'
-        if self.locationThread:
-            print 'Wizard\tnextFrame() killing locationThread'
-            add_to_queue(self.q_in, messages.WIZARD_ABANDON_SHIP)
-            self.locationThread = None
         print 'Wizard\tnextFrame() forgetting current frame'
         self.currentFrame.grid_forget()
         self.frame_idx += 1
@@ -374,56 +297,29 @@ class Wizard():
         if self.frame_idx >= len(self.frameList):
             print 'Wizard\tnextFrame() END OF THE ROAD'
             # We're done with all the frames
-            self.window.destroy()
+            self._quit()
             return
         print 'Wizard\tnextFrame() is this a keyboard callback?'
-        if self.frame_idx in self.keyboardCallbacks:
-            print 'Wizard\tnextFrame() yes, this a keyboard callback frame'
-            self.locationThread = WizardLocationListener(self, self.q_in)
-            self.locationThread.start()
         nextFrame = self.frameList[self.frame_idx]
         print 'Wizard\tnextFrame() forcing nextFrame to be visible'
         nextFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
         self.currentFrame = nextFrame
     
     def prevFrame(self):
-        if self.locationThread:
-            add_to_queue(self.q_in, messages.WIZARD_ABANDON_SHIP)
-            self.locationThread = None
         self.currentFrame.grid_forget()
         self.frame_idx -= 1
         if self.frame_idx < 0: self.frame_idx = 0
-        if self.frame_idx in self.keyboardCallbacks:
-            self.locationThread = WizardLocationListener(self, self.q_in)
-            self.locationThread.start()
         nextFrame = self.frameList[self.frame_idx]
         nextFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
         self.currentFrame = nextFrame
     
-    ###############################################################################
-    ###                             TRANSITION FUNCTIONS                        ###
-    ###############################################################################
-    
-    def quitWizard():
+    def _quit(self):
         add_to_queue(self.q_gui, messages.RELAUNCH_LISTENER)
         self.window.destroy()
         
     ##############################################################################
     ###                             LOCATION SETUP FUNCTIONS                   ###
     ##############################################################################
-    
-    #Initial function that starts off the layout config cascade
-    def startLocationSetup(locationText, nextButton, backButton):
-        firstConf = False
-        
-        #Clear the locationText widget
-        locationText.delete(1.0, END)
-        
-        #Set the location frame as current frame
-        self.currentFrame = locationFrame
-        
-        #Move to first step in layout configuration
-        _defineArmInPile(locationText, nextButton, backButton)
     
     def _configuring_arm(self):
         return 'arm' in self.keyboardCallbacks[self.frame_idx]
@@ -465,11 +361,6 @@ class Wizard():
                 print 'Wizard\tsettings:', s
                 export_settings(**s)
     
-    def registerMovement(self, value):
-        key = self.keyboardCallbacks[self.frame_idx]
-        settings[key] = value
-        export_settings(**settings)
-    
     ##############################################################################
     ###                             WRAPPER FUNCTIONS                          ###
     ##############################################################################
@@ -496,6 +387,28 @@ class Wizard():
     def connectToScanner(self):
         t = WizardQueueListener(self.q_in, self.q_out, messages.SCANNER_CONNECT, None, self.connectedCallback)
         t.start()
+    
+    def displayScannerSample(self):
+        t = WizardQueueListener(self.q_in, self.q_out, messages.SCANNER_PICTURE, None, self.displayCallbackScanner)
+        t.start()
+    
+    def displayWebcamSample(self):
+        t = WizardQueueListener(self.q_in, self.q_out, messages.WEBCAM_PICTURE, None, self.displayCallbackWebcam)
+        t.start()
+    
+    def displayCallbackWebcam(self, msg):
+        #print 'Wizard\tCalling ImageSampleViewer with self.window and msg[1] "%s"' % msg[1]
+        #ImageSampleViewer(self.window, msg[1])
+        #print 'Wizard\tFinished calling ImageSampleViewer'
+        add_to_queue(self.q_gui, messages.SET_WEBCAM_PICTURE, msg[1])
+        #print 'Wizard\tCalling ImageSampleViewer with self.root and msg[1] "%s"' % msg[1]
+        #viewer = ImageSampleViewer(self.window, msg[1])
+        #print 'Wizard\tFinished calling ImageSampleViewer, calling show()'
+        #viewer.show()
+        #print 'Wizard\tFinished calling show()'
+    
+    def displayCallbackScanner(self, msg):
+        add_to_queue(self.q_gui, messages.SET_SCANNER_PICTURE, msg[1])
     
     def connectToWebcam(self):
         t = WizardQueueListener(self.q_in, self.q_out, messages.WEBCAM_CONNECT, None, self.connectedCallback)
