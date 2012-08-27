@@ -18,6 +18,7 @@ from gado.Scanner import Scanner
 from gado.Webcam import Webcam
 import gado.messages as messages
 from gado.db import DBFactory, DBInterface
+from shutil import move
 
 class AutoConnectThread(Thread):
     def __init__(self, gado_sys, progressBar):
@@ -77,7 +78,7 @@ class GadoSystem():
         self._armPosition = 0
         self._actuatorPosition = 0
     
-    def _load_settings(self, image_path='images/', **kargs):
+    def _load_settings(self, image_path='images\\', **kargs):
         self.image_path = image_path
     
     def mainloop(self):
@@ -343,6 +344,8 @@ class GadoSystem():
         print "attempting to check for barcode"
         completed = check_for_barcode(DEFAULT_CAMERA_IMAGE)
         
+        print 'gado_sys\timage_path %s' % self.image_path
+        
         while not completed:
             # New Artifact!
             print "attempting to add an artifact"
@@ -351,7 +354,9 @@ class GadoSystem():
             
             back_fn = '%s%s_back.jpg' % (self.image_path, artifact_id)
             front_fn = '%s%s_front.tiff' % (self.image_path, artifact_id)
-            os.rename(DEFAULT_CAMERA_IMAGE, back_fn)
+            print 'gado_sys\trenaming webcam image to %s' % back_fn
+            move(DEFAULT_CAMERA_IMAGE, back_fn)
+            #os.rename(DEFAULT_CAMERA_IMAGE, back_fn)
             add_to_queue(self.q_out, messages.SET_WEBCAM_PICTURE, back_fn)
             
             print "attempting to add an image"
@@ -368,7 +373,9 @@ class GadoSystem():
             print "attempting to scan"
             completed = self._checkMessages() & completed
             self.scanner.scanImage(DEFAULT_SCANNED_IMAGE)
-            os.rename(DEFAULT_SCANNED_IMAGE, front_fn)
+            print 'gado_sys\trenaming scanned images to %s' % front_fn
+            move(DEFAULT_SCANNED_IMAGE, front_fn)
+            #os.rename(DEFAULT_SCANNED_IMAGE, front_fn)
             add_to_queue(self.q_out, messages.SET_SCANNER_PICTURE, front_fn)
             image_id = self.dbi.add_image(artifact_id, front_fn, True)
             

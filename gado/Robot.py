@@ -1,4 +1,4 @@
-import serial, platform, time, sys
+import serial, platform, time, sys, json
 
 #Constants
 MOVE_ARM = 'a'
@@ -192,10 +192,19 @@ class Robot(object):
         print 'Robot\tlifting!'
         self.serialConnection.write("%s" % LOWER_AND_LIFT)
         self.clearSerialBuffers()
-        for i in range(10):
-            print 'Robot\iteration %s' % i
+        last_height = 0
+        for i in range(6):
+            print 'Robot\titeration %s' % i
             resp = self.returnGadoInfo()
-            print resp
+            try:
+                print 'Robot\tresp: %s' % resp
+                current_height = json.loads(resp)['actuator_pos_s']
+                print 'Robot\tcurrent_height %s' % current_height
+                if current_height == last_height:
+                    return
+            except:
+                pass
+            current_height = last_height
             time.sleep(1)
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
