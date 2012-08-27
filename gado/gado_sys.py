@@ -38,6 +38,7 @@ DEFAULT_SETTINGS = {'baudrate' :115200,
                     "db_filename": "db.sqlite",
                     "image_path": "images/",
                     'wizard_run' : 0}
+                    #'webcam_name' : 'Logitech Webcam 905'}
 
 DEFAULT_SCANNED_IMAGE = 'scanned.tiff'
 DEFAULT_CAMERA_IMAGE = 'backside.jpg'
@@ -63,6 +64,7 @@ class GadoSystem():
         self.tk = Tk
         self.scanner = Scanner(**settings)
         self.robot = Robot(**settings)
+        self.connect()
         self.db = DBFactory(**settings).get_db()
         self.dbi = DBInterface(self.db)
         self.camera = Webcam(**settings)
@@ -172,9 +174,23 @@ class GadoSystem():
                 elif msg[0] == messages.START:
                     expecting_return = False
                     self.start()
-
-                elif msg[0] == messages.WEBCAM_CONNECT:
+                
+                elif msg[0] == messages.WEBCAM_LISTING:
                     expecting_return = True
+                    self.camera = Webcam()
+                
+                elif msg[0] == messages.WEBCAM_CONNECT:
+                    print 'gado_sys\tWEBCAM_CONNECT switch made it'
+                    expecting_return = True
+                    if self.camera:
+                        print 'gado_sys\tCamera already exists'
+                        if self.camera.connected():
+                            print 'gado_sys\tAlready connected to the webcam'
+                            add_to_queue(q, messages.RETURN, self.camera.connected())
+                            return
+                        else: self.camera.disconnect()
+                    self.camera = Webcam()
+                    print 'gado_sys\tself.camera.connected() %s' % self.camera.connected()
                     add_to_queue(q, messages.RETURN, self.camera.connected())
 
                 elif msg[0] == messages.WEBCAM_PICTURE:

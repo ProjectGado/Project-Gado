@@ -217,10 +217,13 @@ class Robot(object):
         self._moveActuator(self.actuator_home_value)
         time.sleep(5)
         print 'Robot\tdone dropping on scanner??'
+        print 'Robot\tturning off the pump'
+        self._vacuumOn(False)
         return True
         
     def moveToOut(self):
         print 'Robot\tlifting actuator up'
+        self._vacuumOn(True)
         self._moveActuator(self.actuator_up_value)
         time.sleep(5)
         print 'Robot\tmoving to out pile'

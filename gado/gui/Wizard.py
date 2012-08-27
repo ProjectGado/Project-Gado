@@ -98,18 +98,19 @@ class Wizard():
         frame, next_btn = self._frame_image_path()
         frameList.append(frame)
         nextButtons.append(next_btn)
-        
+        #'''
         frame, next_btn = self._frame_welcome()
         frameList.append(frame)
         nextButtons.append(next_btn)
-        
+        #'''
         frame, next_btn = self._frame_requirements()
         frameList.append(frame)
         nextButtons.append(next_btn)
-        
+        #'''
         frame, next_btn = self._frame_peripheral('scanner')
         frameList.append(frame)
         nextButtons.append(next_btn)
+        #'''
         frame, next_btn = self._frame_peripheral('webcam')
         frameList.append(frame)
         nextButtons.append(next_btn)

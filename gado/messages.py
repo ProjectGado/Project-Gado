@@ -13,9 +13,11 @@ RESET = 7   # No return
 # Connection and pictures
 ROBOT_CONNECT = 8 # Return (boolean)
 
+SCANNER_LISTING = 9.1 # RETURN ([scanner_names])
 SCANNER_PICTURE = 9 # RETURN (path)
 SCANNER_CONNECT = 10 # RETURN (boolean)
 
+WEBCAM_LISTING = 10.1 # RETURN ([webcam_names])
 WEBCAM_PICTURE = 11 # RETURN (path)
 WEBCAM_CONNECT = 12 # RETURN (boolean)
 
