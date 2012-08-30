@@ -1,37 +1,42 @@
 from VideoCapture import Device
 
 class Webcam():
-    def __init__(self, webcam_name=None, **kargs):
+    def __init__(self, webcam_name=None, webcam_id=None, **kargs):
         self.device = None
-        self.device_number = None
-        if True:#webcam_name != None:
-            try:
-                print 'Webcam\tinside the try'
-                self.device = Device()
-                print 'Webcam\tconnected'
-                self.device_number = 1
-                #self.device_number = device_number
-            except:
-                print 'Webcam\texcept - shit went down'
+        print 'Webcam\t__init__ called with webcam_name=%s and webcam_id=%s' % (webcam_name, webcam_id)
+        if webcam_name is not None:
+            self.connect(device_name=webcam_name)
+        elif webcam_id is not None:
+            self.connect(device_number=webcam_id)
     
-    def options(self):
+    def options(self, device_name=None, device_number=None):
         # I doubt people will have more than 5 webcams plugged in
+        print 'Webcam\toptions() called'
         opts = []
-        for i in range(5):
+        for i in range(2):
             try:
-                d = Device(i)
+                print 'Webcam\toptions - attempting to connect to %s' % i
+                d = Device(devnum=i)
+                if device_name is not None and device_name == d.getDisplayName():
+                    del self.device
+                    self.device = d
+                elif device_number is not None and device_number == i:
+                    del self.device
+                    self.device = d
+                opts.append((i, d.getDisplayName()))
                 del d
-                opts.append(d.getDisplayName())
             except:
-                break
+                raise
+        print 'Webcam\toptions() returning %s' % opts
         return opts
     
-    def connect(self, device_number):
-        try:
-            self.device = Device(device_number)
-            self.device_number = device_number
-        except:
-            pass
+    def connect(self, device_name=None, device_number=None):
+        if device_name is not None:
+            self.options(device_name=device_name)
+        elif device_number is not None:
+            self.options(device_number=device_number)
+        else:
+            self.device = Device()
     
     def disconnect(self):
         del self.device
@@ -42,5 +47,5 @@ class Webcam():
             self.device.saveSnapshot(path)
 
     def connected(self):
-        return self.device_number != None
+        return (self.device != None)
     
