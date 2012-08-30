@@ -7,6 +7,7 @@ import time
 from threading import Thread
 import gado.messages as messages
 import Image, ImageTk
+import Pmw
 
 #Constants
 WINDOW_HEIGHT = 300
@@ -145,6 +146,20 @@ class Wizard():
         
         window.protocol("WM_DELETE_WINDOW", self._quit)
         window.withdraw()
+        
+    def _set_webcam(self, a):
+        idx = self.webcam_dropdown.curselection()[0]
+        name = self.webcams[int(idx)][1]
+        export_settings(webcam_name=name)
+        print 'Wizard\tI just saved the webcam_name as %s' % name
+    
+    def webcam_options(self, msg):
+        opts = msg[1]
+        self.webcams = opts
+        self.webcam_dropdown.delete(0, 'end')
+        for opt in opts:
+            self.webcam_dropdown.insert('end', opt[1])
+        pass
     
     def load(self):
         for frame in self.frameList:
@@ -153,6 +168,9 @@ class Wizard():
         self.currentFrame = self.frameList[0]
         self.frame_idx = 0
         self.window.deiconify()
+        
+        t = WizardQueueListener(self.q_in, self.q_out, messages.WEBCAM_LISTING, None, self.webcam_options)
+        t.start()
         #self.root.mainloop()
     
     ##############################################################################
@@ -227,6 +245,10 @@ class Wizard():
         elif 'webcam' in p_type.lower():
             funct = self.connectToWebcam
             funct_2 = self.displayWebcamSample
+        
+            webcams = Pmw.ComboBox(frame, selectioncommand=self._set_webcam)
+            webcams.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=1)
+            self.webcam_dropdown = webcams
         
         connect = Button(frame, text = "Locate %s" % (p_type.capitalize()),
                          command = funct)

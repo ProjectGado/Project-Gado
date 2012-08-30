@@ -177,8 +177,12 @@ class GadoSystem():
                     self.start()
                 
                 elif msg[0] == messages.WEBCAM_LISTING:
+                    print 'gado_sys\tWEBCAM_LISTING'
                     expecting_return = True
-                    self.camera = Webcam()
+                    #self.camera = Webcam()
+                    opts = self.camera.options()
+                    print 'gado_sys\tWEBCAM_LISTING - %s' % opts
+                    add_to_queue(q, messages.RETURN, opts)
                 
                 elif msg[0] == messages.WEBCAM_CONNECT:
                     print 'gado_sys\tWEBCAM_CONNECT switch made it'
