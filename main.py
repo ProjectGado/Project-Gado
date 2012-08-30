@@ -13,13 +13,13 @@ A few definitions:
    of artifacts are loaded into the 'in' tray, they are all
    considered to be a part of the same 'artifact set'
 '''
-from gado.GadoGui import GadoGui
-from gado.gado_sys import GadoSystem
+from src.gado.GadoGui import GadoGui
+from src.gado.gado_sys import GadoSystem
 from Tkinter import Tk
 from threading import Thread, Lock
 from Queue import Queue
-from gado.functions import fetch_from_queue
-import gado.messages as messages
+from src.gado.functions import fetch_from_queue
+import src.gado.messages as messages
 import sys
 
 class GuiThread(Thread):
