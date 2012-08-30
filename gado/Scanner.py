@@ -15,7 +15,7 @@ WIA_VERTICAL_BED_SIZE = "Vertical Bed Size"
 DEVICE_MANAGER = "WIA.DeviceManager"
 COMMON_DIALOG = "WIA.CommonDialog"
 SCALE_FACTOR = 1000
-DEFAULT_DPI = 600
+DEFAULT_DPI = 150
 
 class Scanner():
     

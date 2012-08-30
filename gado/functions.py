@@ -4,7 +4,6 @@ from subprocess import Popen, PIPE
 
 
 def fetch_from_queue(q, message=None, timeout=None):
-    
     start = datetime.datetime.now()
     while True:
         # we check for emptiness, instead of continuous .get()
@@ -34,6 +33,26 @@ def add_to_queue(q, message, arguments=None):
     time.sleep(1)
     q.put((message, arguments))
     pass
+
+def _gadodir():
+    n = os.name
+    if n == 'nt':
+        return os.path.join(os.environ['APPDATA'], 'Gado')
+    else:
+        return '.'
+
+def _settingspath():
+    d = os.path.join(_userpath(), 'gado.conf')
+    os.makedirs(d)
+    n = os.name
+    if n == 'nt':
+        app_data = os.path.join(os.environ['APPDATA'], 'Gado')
+    else:
+        pass
+        # ruh roh, platform is probably not supported
+
+def _imagespath():
+    d = os.path.join()
 
 def import_settings():
     try:
