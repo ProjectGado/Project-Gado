@@ -3,8 +3,8 @@ from Tkinter import *
 import tkMessageBox
 import ttk
 import Pmw
-import src.gado.messages as messages
-from src.gado.functions import *
+import gado.messages as messages
+from gado.functions import *
 
 class ManageSets():
     def __init__(self, root, q_in, q_out, q_gui):

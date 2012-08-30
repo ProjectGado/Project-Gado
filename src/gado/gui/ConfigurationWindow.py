@@ -1,7 +1,7 @@
 import sys, ttk, Pmw, time, tkMessageBox
 from Tkinter import *
-from src.gado.functions import *
-import src.gado.messages as messages
+from gado.functions import *
+import gado.messages as messages
 
 INPUT_TRAY_LOCATION = 'arm_in_value'
 OUTPUT_TRAY_LOCATION = 'arm_out_value'

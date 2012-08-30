@@ -1,4 +1,4 @@
-from src.gado.Robot import Robot
+from gado.Robot import Robot
 import thread
 import subprocess
 import re
@@ -7,17 +7,17 @@ import _winreg
 import itertools
 from threading import Thread
 import serial
-from src.gado.functions import *
+from gado.functions import *
 import time, os
-from src.gado.pytesser import *
-from src.gado.Webcam import *
+from gado.pytesser import *
+from gado.Webcam import *
 import Queue
-from src.gado.gui.ProgressBar import *
-from src.gado.GadoGui import GadoGui
-from src.gado.Scanner import Scanner
-from src.gado.Webcam import Webcam
-import src.gado.messages as messages
-from src.gado.db import DBFactory, DBInterface
+from gado.gui.ProgressBar import *
+from gado.GadoGui import GadoGui
+from gado.Scanner import Scanner
+from gado.Webcam import Webcam
+import gado.messages as messages
+from gado.db import DBFactory, DBInterface
 from shutil import move
 
 class AutoConnectThread(Thread):

@@ -1,4 +1,4 @@
-from src.lib.dal import DAL, Field
+from lib.dal import DAL, Field
 import os
 
 class DBFactory():

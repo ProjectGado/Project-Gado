@@ -2,10 +2,10 @@ from Tkinter import *
 import tkFileDialog
 import ttk
 import tkFont
-from src.gado.functions import *
+from gado.functions import *
 import time
 from threading import Thread
-import src.gado.messages as messages
+import gado.messages as messages
 import Image, ImageTk
 
 #Constants

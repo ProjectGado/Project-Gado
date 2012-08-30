@@ -7,14 +7,14 @@ import ttk
 import Pmw
 import time
 import platform
-from src.gado.Robot import Robot
-from src.gado.functions import *
-from src.gado.gui.ManageSets import ManageSets
-from src.gado.gui.ConfigurationWindow import ConfigurationWindow
-import src.gado.messages as messages
+from gado.Robot import Robot
+from gado.functions import *
+from gado.gui.ManageSets import ManageSets
+from gado.gui.ConfigurationWindow import ConfigurationWindow
+import gado.messages as messages
 from threading import Thread
 from Queue import Queue
-from src.gado.gui.Wizard import Wizard
+from gado.gui.Wizard import Wizard
 
 class GuiListener(Thread):
     def __init__(self, q, gui_q, gui):
