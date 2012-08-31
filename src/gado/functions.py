@@ -42,14 +42,9 @@ def _gadodir():
         return '.'
 
 def _settingspath():
-    d = os.path.join(_userpath(), 'gado.conf')
+    d = os.path.join(_gadodir(), 'gado.conf')
     os.makedirs(d)
-    n = os.name
-    if n == 'nt':
-        app_data = os.path.join(os.environ['APPDATA'], 'Gado')
-    else:
-        pass
-        # ruh roh, platform is probably not supported
+    return d
 
 def _imagespath():
     d = os.path.join()
@@ -57,7 +52,7 @@ def _imagespath():
 def import_settings():
     try:
         # image_path
-        FH = open('gado.conf')
+        FH = open(_settingspath())
         conf = FH.read()
         FH.close()
         settings = json.loads(conf)
