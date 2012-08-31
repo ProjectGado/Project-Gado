@@ -50,8 +50,23 @@ def _settingspath():
         pass
     return p
 
-def _imagespath():
-    d = os.path.join()
+def dbpath():
+    d = _gadodir()
+    p = os.path.join(d, 'databases')
+    try:
+        os.makedirs(p)
+    except:
+        print 'functions\tUnable to create the images path'
+    return p
+
+def imagespath():
+    d = _gadodir()
+    p = os.path.join(d, 'images')
+    try:
+        os.makedirs(p)
+    except:
+        print 'functions\tUnable to create the images path'
+    return p
 
 def import_settings():
     try:

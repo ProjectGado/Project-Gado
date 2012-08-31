@@ -48,6 +48,7 @@ class LogicThread(Thread):
     
     def run(self):
         print "LogicThread\tcalling main loop on gado_sys"
+        self.gado_sys.load()
         self.gado_sys.mainloop()
         print "LogicThread\tfinished main loop on gado_sys"
         

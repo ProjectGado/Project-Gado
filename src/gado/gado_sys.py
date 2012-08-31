@@ -35,12 +35,11 @@ class AutoConnectThread(Thread):
         self.progressBar.stop(self.connected)
 
 DEFAULT_SETTINGS = {'baudrate' :115200,
-                    "db_directory": "databases",
                     "db_filename": "db.sqlite",
-                    "image_path": "images/",
                     'wizard_run' : 0}
                     #'webcam_name' : 'Logitech Webcam 905'}
-
+DEFAULT_SETTINGS['db_directory'] = dbpath()
+DEFAULT_SETTINGS['image_path'] = imagespath()
 DEFAULT_SCANNED_IMAGE = 'scanned.tiff'
 DEFAULT_CAMERA_IMAGE = 'backside.jpg'
 
@@ -63,12 +62,9 @@ class GadoSystem():
             if not recovered: add_to_queue(self.q_out, messages.READY)
         
         self.tk = Tk
-        self.scanner = Scanner(**settings)
-        self.robot = Robot(**settings)
-        self.connect()
         self.db = DBFactory(**settings).get_db()
         self.dbi = DBInterface(self.db)
-        self.camera = Webcam(**settings)
+        
         '''
         print 'gado_sys\tattempting to get webcam options'
         try:
@@ -90,6 +86,13 @@ class GadoSystem():
     
     def _load_settings(self, image_path='images\\', **kargs):
         self.image_path = image_path
+        
+    def load(self):
+        settings = import_settings()
+        self.scanner = Scanner(**settings)
+        self.robot = Robot(**settings)
+        #self.connect()
+        self.camera = Webcam(**settings)
     
     def mainloop(self):
         dbi = self.dbi
