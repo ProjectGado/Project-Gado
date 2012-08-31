@@ -44,7 +44,10 @@ def _gadodir():
 def _settingspath():
     d = _gadodir()
     p = os.path.join(d, 'gado.conf')
-    os.makedirs(d)
+    try:
+        os.makedirs(d)
+    except:
+        pass
     return p
 
 def _imagespath():
@@ -73,7 +76,7 @@ def export_settings(**kwargs):
     newConf = dict(conf.items() + kwargs.items())
     
     #Open settings file for writing
-    FH = open('gado.conf', 'w')
+    FH = open(_settingspath(), 'w')
     
     #Dump the merged settings dictionary into the settings file
     FH.write(json.dumps(newConf))
