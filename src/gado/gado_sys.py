@@ -69,6 +69,16 @@ class GadoSystem():
         self.db = DBFactory(**settings).get_db()
         self.dbi = DBInterface(self.db)
         self.camera = Webcam(**settings)
+        '''
+        print 'gado_sys\tattempting to get webcam options'
+        try:
+            print 'gado_sys\t%s' % (self.camera.options())
+        except:
+            print 'gado_sys\tcamera options failed'
+        
+        print 'gado_sys\tattempting to call dumb()'
+        print 'gado_sys\t%s' % (self.camera.dumb())
+        '''
         self._load_settings(**settings)
         
         self.selected_set = None
