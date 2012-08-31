@@ -42,9 +42,10 @@ def _gadodir():
         return '.'
 
 def _settingspath():
-    d = os.path.join(_gadodir(), 'gado.conf')
+    d = _gadodir()
+    p = os.path.join(d, 'gado.conf')
     os.makedirs(d)
-    return d
+    return p
 
 def _imagespath():
     d = os.path.join()
