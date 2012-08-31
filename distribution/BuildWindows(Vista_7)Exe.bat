@@ -16,7 +16,7 @@ copy ..\src\main.py .
 copy ..\src\lib\Pmw .
 
 :: Call the python build script
-python BuildGadoExe.py py2exe
+python BuildGado(Vista_7)Exe.py py2exe
 
 ::Move test image into build directory so we don't crash
 ::(used in the image displays before we grab real images)
