@@ -1,0 +1,25 @@
+In order to build an executable version of the source code, you need to execute the correct
+build script for your platform.
+
+Windows:
+
+    Vista/7 (32/64-bit):
+    
+        Use the "BuildWindows(Vista_7)Exe.bat" batch file. If you are building on a 64bit version
+        of Windows, then the resulting exe will be 64 bit.
+        
+        Likewise, if you are building on a 32bit version of Windows, the resulting exe will be
+        32 bit.
+        
+    XP (32-bit):
+    
+        Use the "BuildWindows(XP)Exe.bat" batch file. This will result in a 32-bit executable that
+        is capable of being run on Windows XP.
+        
+Linux/Unix:
+
+    *Coming soon!*
+    
+Mac:
+
+    *Coming soon!*
