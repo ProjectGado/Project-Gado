@@ -92,7 +92,7 @@ setup(
                           "packages": packages,
                           "dll_excludes": dll_excludes,
                           "bundle_files": 3,
-                          "dist_dir": "windows_7_x64_gado",
+                          "dist_dir": "windows_(Vista_7)_gado",
                           "xref": False,
                           "skip_archive": False,
                           "ascii": False,
