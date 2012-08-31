@@ -69,6 +69,16 @@ class GadoSystem():
         self.db = DBFactory(**settings).get_db()
         self.dbi = DBInterface(self.db)
         self.camera = Webcam(**settings)
+        '''
+        print 'gado_sys\tattempting to get webcam options'
+        try:
+            print 'gado_sys\t%s' % (self.camera.options())
+        except:
+            print 'gado_sys\tcamera options failed'
+        
+        print 'gado_sys\tattempting to call dumb()'
+        print 'gado_sys\t%s' % (self.camera.dumb())
+        '''
         self._load_settings(**settings)
         
         self.selected_set = None
@@ -177,8 +187,12 @@ class GadoSystem():
                     self.start()
                 
                 elif msg[0] == messages.WEBCAM_LISTING:
+                    print 'gado_sys\tWEBCAM_LISTING'
                     expecting_return = True
-                    self.camera = Webcam()
+                    #self.camera = Webcam()
+                    opts = self.camera.options()
+                    print 'gado_sys\tWEBCAM_LISTING - %s' % opts
+                    add_to_queue(q, messages.RETURN, opts)
                 
                 elif msg[0] == messages.WEBCAM_CONNECT:
                     print 'gado_sys\tWEBCAM_CONNECT switch made it'
