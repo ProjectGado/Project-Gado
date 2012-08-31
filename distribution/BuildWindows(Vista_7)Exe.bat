@@ -25,7 +25,7 @@ copy ..\src\test.jpg windows_(Vista_7)_gado
 ::Delete the build folders, it only clutters things
 rmdir /s /q build
 rmdir /s /q gado
-rmdir /s /q lib
+::rmdir /s /q lib
 del main.py
 del Pmw.py
 del PmwBlt.py
