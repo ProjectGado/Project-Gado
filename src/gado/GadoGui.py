@@ -15,6 +15,7 @@ import gado.messages as messages
 from threading import Thread
 from Queue import Queue
 from gado.gui.Wizard import Wizard
+from gado.gui.AdvancedSettings import AdvancedSettings
 
 class GuiListener(Thread):
     def __init__(self, q, gui_q, gui):
@@ -47,16 +48,6 @@ class GuiListener(Thread):
 
 class GadoGui(Frame):
     
-    #Widgets
-    global artifactSetDropDown
-    
-    #These have to be globals in order to avoid garbage collection bug in TkImage class
-    global frontImage
-    global backImage
-    
-    global frontImageLabel
-    global backImageLabel
-    
     def __init__(self, q_in, q_out):
         # Create the root frame
         self.q_in = q_in
@@ -79,6 +70,7 @@ class GadoGui(Frame):
         self.selected_set = None
         self.config_window = ConfigurationWindow(self.root, self.q_in, self.q_out, self.gui_q)
         self.wizard = Wizard(self.root, self.q_in, self.q_out, self.gui_q)
+        self.advanced_settings = AdvancedSettings(self.root, self.q_in, self.q_out, self.gui_q)
         
         #Create all menus for application
         self.createMenus(self.root)
@@ -139,8 +131,12 @@ class GadoGui(Frame):
         self.settingsMenu = Menu(self.menubar, tearoff=0)
         self.settingsMenu.add_command(label="Configure Layout", command=self.show_configuration_window)
         self.settingsMenu.add_command(label="Launch Wizard", command=self.show_wizard)
+        self.settingsMenu.add_command(label="Advanced Settings", command = self.advanced_settings.show)
         return self.settingsMenu
-    
+   
+    def show_advanced_settings(self):
+        self.advanced_settings.show()
+   
     def tkloop(self):
         try:
             while True:

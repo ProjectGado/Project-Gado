@@ -33,7 +33,7 @@ class Scanner():
         
         #Try and push the settings from the conf file
         try:
-            self.scanDpi = kwargs['scan_dpi']
+            self.scanDpi = kwargs['image_front_dpi']
             self.scannerName = kwargs['scanner_name']
         except:
             print "Error while instantiating scanner with passed settings...\nError: %s" % (sys.exc_info()[0])

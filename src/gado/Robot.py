@@ -23,7 +23,7 @@ ARM_LOWER_BOUNDS = 0
 ARM_UPPER_BOUNDS = 190 # can we increase this?
 
 class Robot(object):
-    def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0, actuator_home_value=30, baudrate=115200, actuator_up_value=30, **kargs):
+    def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0, actuator_home_value=30, baudrate=115200, actuator_up_value=20, gado_port=None, **kargs):
         #Grab settings
         self.arm_home_value = arm_home_value
         self.arm_in_value = arm_in_value
@@ -34,6 +34,10 @@ class Robot(object):
         self.serialConnection = None
         self.current_arm_value = arm_home_value
         self.current_actuator_value = actuator_up_value
+        
+        if gado_port is not None:
+            self.gado_port = gado_port
+            self.connect(gado_port)
         
     #Take in a dictionary of all of the robot settings and make these the current settings
     #It is important that all robot specific settings are passed, otherwise things may break
@@ -65,6 +69,10 @@ class Robot(object):
         Connects to the physcial robot on a certain COM port
         Returns true if it hears back correctly, else false
         '''
+        
+        if self.connected():
+            return True
+        
         try:
             #Open a serial connection to this serial port
             self.serialConnection = serial.Serial(port, self.baudrate, timeout=1)
