@@ -353,43 +353,53 @@ class GadoSystem():
         #The actual looping should be happening here, instead of in Robot.py
         #Robot.py should just run the loop once and all conditions/vars will be stored here
         #self.robotThread = RobotThread(self.robot)
-        print "checking for messages"
+        print "gado_sys\tchecking for messages"
         self._checkMessages()
-        print 'attempting to save picture'
+        print 'gado_sys\tattempting to save picture'
+        
+        # Sometimes it gets left behind, get rid of it
+        try: os.remove(DEFAULT_CAMERA_IMAGE)
+        except: pass
         self.camera.savePicture(DEFAULT_CAMERA_IMAGE)
         self._checkMessages()
-        print "attempting to check for barcode"
+        print "gado_sys\tattempting to check for barcode"
         completed = check_for_barcode(DEFAULT_CAMERA_IMAGE)
         
         print 'gado_sys\timage_path %s' % self.image_path
         
         while not completed:
             # New Artifact!
-            print "attempting to add an artifact"
+            print "gado_sys\tattempting to add an artifact"
             completed = self._checkMessages() & completed
-            artifact_id = self.dbi.add_artifact(self.selected_set)
+            artifact_info = new_artifact(self.dbi, self.selected_set)
             
-            back_fn = '%s%s_back.jpg' % (self.image_path, artifact_id)
-            front_fn = '%s%s_front.tiff' % (self.image_path, artifact_id)
+            front_fn = artifact_info['front_path']
+            back_fn = artifact_info['back_path']
+            
             print 'gado_sys\trenaming webcam image to %s' % back_fn
             move(DEFAULT_CAMERA_IMAGE, back_fn)
             #os.rename(DEFAULT_CAMERA_IMAGE, back_fn)
             add_to_queue(self.q_out, messages.SET_WEBCAM_PICTURE, back_fn)
             
-            print "attempting to add an image"
+            print "gado_sys\tattempting to add an image"
             image_id = self.dbi.add_image(artifact_id, back_fn, False)
             
-            print "attempting to go pick up an object"
+            print "gado_sys\tattempting to go pick up an object"
             completed = self._checkMessages() & completed
             self.robot.pickUpObject()
             
-            print "attempting to move object to scanner"
+            print "gado_sys\tattempting to move object to scanner"
             completed = self._checkMessages() & completed
             self.robot.scanObject()
             
-            print "attempting to scan"
+            print "gado_sys\tattempting to scan"
             completed = self._checkMessages() & completed
+            
+            # Sometimes it gets left behind :(
+            try: os.remove(DEFAULT_SCANNED_IMAGE)
+            except: pass
             self.scanner.scanImage(DEFAULT_SCANNED_IMAGE)
+            
             print 'gado_sys\trenaming scanned images to %s' % front_fn
             move(DEFAULT_SCANNED_IMAGE, front_fn)
             #os.rename(DEFAULT_SCANNED_IMAGE, front_fn)

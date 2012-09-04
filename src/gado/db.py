@@ -47,7 +47,6 @@ class DBFactory():
         # this could be a scan of the front or a snapshot of the back
         db.define_table('images',
             Field('artifact', db.artifacts),
-            Field('artifact_incrementer', 'integer'),
             Field('path', 'string'),
             Field('front', 'boolean'), # is this a picture of the front?
             Field('name', 'string'))
@@ -150,8 +149,9 @@ class DBInterface():
         return current_list
     
     def add_artifact_set(self, name, parent):
-        self.db.artifact_sets.insert(name=name, parent=parent)
+        i = self.db.artifact_sets.insert(name=name, parent=parent)
         self.db.commit()
+        return i
         
     def delete_artifact_set(self, id):
         self.db(self.db.artifact_sets.id == id).delete()
@@ -168,16 +168,52 @@ class DBInterface():
             return name
         return row['name']
     
+    def _artifact_parents(self, artifact_set):
+        row = db(db.artifact_sets.id == artifact_set).select()
+        parent = row['parent']
+        if parent:
+            parents = self._artifact_parents(parent)
+        else:
+            parents = []
+        parents.append((row['id'], row['name']))
+        return parents
+    
+    def artifact_parents(self, artifact_id):
+        '''
+        Returns a list of parents for an artifact
+        
+        The list is made up of (id, name) tuples for each artifact_set
+        Top of the list is the top of the artifact_set hierarchy
+        '''
+        db = self.db
+        parent = db(db.artifacts.id == artifact_id).select(db.artifact_set).first()['artifact_set']
+        parents = self._artifact_parents(parent)
+        return parents
+    
+    def _set_incrementer(self, artifact_set):
+        db = self.db
+        m = db.artifacts.artifact_set.max()
+        row = db(db.artifacts.artifact_set == artifact_set).select(m)
+        if not row:
+            return 1
+        if not row[0][m]:
+            return 1
+        return row[0][m] + 1
+    
     def add_artifact(self, artifact_set):
         # these are close to valid
         #incr = self.db(self.db.artifacts.artifact_set == artifact_set).count() + 1
         #name = '%s%s' % (self._get_set_name(artifact_set), incr)
-        incr = 1
-        name = 'hey there'
-        return self.db.artifacts.insert(artifact_set = artifact_set, name = name, set_incrementer=incr)
+        name = ''
+        inc = self._set_incrementer(artifact_set)
+        return (self.db.artifacts.insert(artifact_set = artifact_set,
+                                        name = name,
+                                        set_incrementer=inc), inc)
     
     def add_image(self, artifact, path, front):
         db = self.db
-        incr = 1
-        name = 'hey'
-        return db.images.insert(artifact=artifact, path=path, front=front, artifact_incrementer=incr, name=name)
+        name = path[path.find('/') + 1:path.rfind('.')]
+        i = db.images.insert(artifact=artifact, path=path, front=front, name=name)
+    
+    def commit(self):
+        self.db.commit()

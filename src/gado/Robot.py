@@ -69,6 +69,10 @@ class Robot(object):
         Connects to the physcial robot on a certain COM port
         Returns true if it hears back correctly, else false
         '''
+        
+        if self.connected():
+            return True
+        
         try:
             #Open a serial connection to this serial port
             self.serialConnection = serial.Serial(port, self.baudrate, timeout=1)
