@@ -55,6 +55,10 @@ class GadoGui(Frame):
         self.gui_q = Queue()
         self.t1 = GuiListener(q_in, self.gui_q, self)
         self.root = Tk()
+        
+        #Set the title and the icon
+        self.root.title("Gado Control Software")
+        
         self.root.protocol('WM_DELETE_WINDOW', self.destroy)
         #Initialize the master frame
         Frame.__init__(self, self.root)
@@ -90,6 +94,7 @@ class GadoGui(Frame):
         
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
         self.t1.start()
+        self.root.wm_iconbitmap("gado.ico")
         self.root.mainloop()
         
     #################################################################################

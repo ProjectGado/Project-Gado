@@ -21,6 +21,7 @@ python BuildGado(Vista_7)Exe.py py2exe
 ::Move test image into build directory so we don't crash
 ::(used in the image displays before we grab real images)
 copy ..\src\test.jpg windows_(Vista_7)_gado
+copy ..\src\gado.ico windows_(Vista_7)_gado
 
 ::Delete the build folders, it only clutters things
 rmdir /s /q build
