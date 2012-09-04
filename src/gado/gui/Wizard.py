@@ -7,6 +7,7 @@ import time
 from threading import Thread
 import gado.messages as messages
 import Image, ImageTk
+import Pmw
 
 #Constants
 WINDOW_HEIGHT = 300
@@ -25,8 +26,17 @@ class WizardQueueListener(Thread):
         Thread.__init__(self)
     
     def run(self):
+        if self.message == messages.WEBCAM_LISTING: track = True
+        else: track = True
+        
+        if track:
+            print 'WizardQueueListener\ttrack=True, message=%s' % self.message
         add_to_queue(self.q_out, self.message, self.args)
+        if track:
+            print 'WizardQueueListener\tadded message to the queue'
         msg = fetch_from_queue(self.q_in)
+        if track:
+            print 'WizardQueueListener\tfetched message from queue', msg
         self.callback(msg)
         
 class ImageSampleViewer(Frame):
@@ -82,7 +92,7 @@ class Wizard():
         #Set base size requirements
         window = Toplevel(root)
         window.minsize(WINDOW_WIDTH, WINDOW_HEIGHT)
-        window.maxsize(WINDOW_WIDTH, WINDOW_HEIGHT)
+        #window.maxsize(WINDOW_WIDTH, WINDOW_HEIGHT)
         window.geometry("%dx%d+0+0" % (WINDOW_WIDTH, WINDOW_HEIGHT))
         self.window = window
         
@@ -107,14 +117,14 @@ class Wizard():
         frameList.append(frame)
         nextButtons.append(next_btn)
         #'''
+        frame, next_btn = self._frame_peripheral('webcam')
+        frameList.append(frame)
+        nextButtons.append(next_btn)
+        #'''
         frame, next_btn = self._frame_peripheral('scanner')
         frameList.append(frame)
         nextButtons.append(next_btn)
         #'''
-        frame, next_btn = self._frame_peripheral('webcam')
-        frameList.append(frame)
-        nextButtons.append(next_btn)
-        
         frame, next_btn = self._frame_location(IN_PILE)
         frameList.append(frame)
         nextButtons.append(next_btn)
@@ -145,6 +155,20 @@ class Wizard():
         
         window.protocol("WM_DELETE_WINDOW", self._quit)
         window.withdraw()
+        
+    def _set_webcam(self, a):
+        idx = self.webcam_dropdown.curselection()[0]
+        name = self.webcams[int(idx)][1]
+        export_settings(webcam_name=name)
+        print 'Wizard\tI just saved the webcam_name as %s' % name
+    
+    def webcam_options(self, msg):
+        opts = msg[1]
+        self.webcams = opts
+        self.webcam_dropdown.delete(0, 'end')
+        for opt in opts:
+            self.webcam_dropdown.insert('end', opt[1])
+        pass
     
     def load(self):
         for frame in self.frameList:
@@ -153,6 +177,9 @@ class Wizard():
         self.currentFrame = self.frameList[0]
         self.frame_idx = 0
         self.window.deiconify()
+        
+        t = WizardQueueListener(self.q_in, self.q_out, messages.WEBCAM_LISTING, None, self.webcam_options)
+        t.start()
         #self.root.mainloop()
     
     ##############################################################################
@@ -228,13 +255,18 @@ class Wizard():
             funct = self.connectToWebcam
             funct_2 = self.displayWebcamSample
         
+            webcams = Pmw.ComboBox(frame, selectioncommand=self._set_webcam)
+            webcams.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=1)
+            self.webcam_dropdown = webcams
+            
+        
         connect = Button(frame, text = "Locate %s" % (p_type.capitalize()),
                          command = funct)
-        connect.grid(column = 0, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
+        connect.grid(column = 1, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         
         sample = Button(frame, text = "Take Sample Picture",
                          command = funct_2)
-        sample.grid(column = 1, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
+        sample.grid(column = 2, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         
         nextButton = self.nextButton(frame)
         prevButton = self.prevButton(frame)

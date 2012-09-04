@@ -26,7 +26,7 @@ class Webcam():
                 opts.append((i, d.getDisplayName()))
                 del d
             except:
-                raise
+                pass
         print 'Webcam\toptions() returning %s' % opts
         return opts
     

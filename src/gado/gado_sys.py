@@ -35,12 +35,11 @@ class AutoConnectThread(Thread):
         self.progressBar.stop(self.connected)
 
 DEFAULT_SETTINGS = {'baudrate' :115200,
-                    "db_directory": "databases",
                     "db_filename": "db.sqlite",
-                    "image_path": "images/",
                     'wizard_run' : 0}
                     #'webcam_name' : 'Logitech Webcam 905'}
-
+DEFAULT_SETTINGS['db_directory'] = dbpath()
+DEFAULT_SETTINGS['image_path'] = imagespath()
 DEFAULT_SCANNED_IMAGE = 'scanned.tiff'
 DEFAULT_CAMERA_IMAGE = 'backside.jpg'
 
@@ -63,12 +62,19 @@ class GadoSystem():
             if not recovered: add_to_queue(self.q_out, messages.READY)
         
         self.tk = Tk
-        self.scanner = Scanner(**settings)
-        self.robot = Robot(**settings)
-        self.connect()
         self.db = DBFactory(**settings).get_db()
         self.dbi = DBInterface(self.db)
-        self.camera = Webcam(**settings)
+        
+        '''
+        print 'gado_sys\tattempting to get webcam options'
+        try:
+            print 'gado_sys\t%s' % (self.camera.options())
+        except:
+            print 'gado_sys\tcamera options failed'
+        
+        print 'gado_sys\tattempting to call dumb()'
+        print 'gado_sys\t%s' % (self.camera.dumb())
+        '''
         self._load_settings(**settings)
         
         self.selected_set = None
@@ -80,6 +86,13 @@ class GadoSystem():
     
     def _load_settings(self, image_path='images\\', **kargs):
         self.image_path = image_path
+        
+    def load(self):
+        settings = import_settings()
+        self.scanner = Scanner(**settings)
+        self.robot = Robot(**settings)
+        #self.connect()
+        self.camera = Webcam(**settings)
     
     def mainloop(self):
         dbi = self.dbi
@@ -177,8 +190,12 @@ class GadoSystem():
                     self.start()
                 
                 elif msg[0] == messages.WEBCAM_LISTING:
+                    print 'gado_sys\tWEBCAM_LISTING'
                     expecting_return = True
-                    self.camera = Webcam()
+                    #self.camera = Webcam()
+                    opts = self.camera.options()
+                    print 'gado_sys\tWEBCAM_LISTING - %s' % opts
+                    add_to_queue(q, messages.RETURN, opts)
                 
                 elif msg[0] == messages.WEBCAM_CONNECT:
                     print 'gado_sys\tWEBCAM_CONNECT switch made it'
@@ -336,43 +353,53 @@ class GadoSystem():
         #The actual looping should be happening here, instead of in Robot.py
         #Robot.py should just run the loop once and all conditions/vars will be stored here
         #self.robotThread = RobotThread(self.robot)
-        print "checking for messages"
+        print "gado_sys\tchecking for messages"
         self._checkMessages()
-        print 'attempting to save picture'
+        print 'gado_sys\tattempting to save picture'
+        
+        # Sometimes it gets left behind, get rid of it
+        try: os.remove(DEFAULT_CAMERA_IMAGE)
+        except: pass
         self.camera.savePicture(DEFAULT_CAMERA_IMAGE)
         self._checkMessages()
-        print "attempting to check for barcode"
+        print "gado_sys\tattempting to check for barcode"
         completed = check_for_barcode(DEFAULT_CAMERA_IMAGE)
         
         print 'gado_sys\timage_path %s' % self.image_path
         
         while not completed:
             # New Artifact!
-            print "attempting to add an artifact"
+            print "gado_sys\tattempting to add an artifact"
             completed = self._checkMessages() & completed
-            artifact_id = self.dbi.add_artifact(self.selected_set)
+            artifact_info = new_artifact(self.dbi, self.selected_set)
             
-            back_fn = '%s%s_back.jpg' % (self.image_path, artifact_id)
-            front_fn = '%s%s_front.tiff' % (self.image_path, artifact_id)
+            front_fn = artifact_info['front_path']
+            back_fn = artifact_info['back_path']
+            
             print 'gado_sys\trenaming webcam image to %s' % back_fn
             move(DEFAULT_CAMERA_IMAGE, back_fn)
             #os.rename(DEFAULT_CAMERA_IMAGE, back_fn)
             add_to_queue(self.q_out, messages.SET_WEBCAM_PICTURE, back_fn)
             
-            print "attempting to add an image"
+            print "gado_sys\tattempting to add an image"
             image_id = self.dbi.add_image(artifact_id, back_fn, False)
             
-            print "attempting to go pick up an object"
+            print "gado_sys\tattempting to go pick up an object"
             completed = self._checkMessages() & completed
             self.robot.pickUpObject()
             
-            print "attempting to move object to scanner"
+            print "gado_sys\tattempting to move object to scanner"
             completed = self._checkMessages() & completed
             self.robot.scanObject()
             
-            print "attempting to scan"
+            print "gado_sys\tattempting to scan"
             completed = self._checkMessages() & completed
+            
+            # Sometimes it gets left behind :(
+            try: os.remove(DEFAULT_SCANNED_IMAGE)
+            except: pass
             self.scanner.scanImage(DEFAULT_SCANNED_IMAGE)
+            
             print 'gado_sys\trenaming scanned images to %s' % front_fn
             move(DEFAULT_SCANNED_IMAGE, front_fn)
             #os.rename(DEFAULT_SCANNED_IMAGE, front_fn)
