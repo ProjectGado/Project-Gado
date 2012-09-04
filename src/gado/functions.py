@@ -109,14 +109,17 @@ def new_artifact(dbi, artifact_set):
     '''
     i, inc = dbi.add_artifact(artifact_set)
     settings = import_settings()
-    front_path, back_path = _image_paths(dbi, i, artifact_set, inc, **settings)
+    image_path = settings.get('image_path')
+    if not image_path: image_path = imagespath()
+    
+    front_path, back_path = _image_paths(dbi, i, artifact_set, inc, image_path, **settings)
     front_id = dbi.add_image(i, front_path, front=True)
     back_id = dbi.add_image(i, back_path, front=False)
     dbi.commit()
     return dict(artifact_id = i, front_id = front_id, back_id = back_id,
                 front_path = front_path, back_path = back_path)
     
-def _image_paths(dbi, artifact_id, artifact_set, incrementer,
+def _image_paths(dbi, artifact_id, artifact_set, incrementer, image_path,
                  image_front_prefix='', image_front_postfix='_front',
                  image_back_prefix='', image_back_postfix='_back',
                  image_front_delim='', image_back_delim='',
