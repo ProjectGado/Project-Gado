@@ -49,8 +49,8 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: 
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
 
 [Registry]
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "TCL_LIBRARY"; ValueData: "C:/Program Files(x86)/Gado Control Software/tcl8.5;C:/Program Files/Gado Control Software/tcl8.5";
-Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "TK_LIBRARY"; ValueData: "C:/Program Files(x86)/Gado Control Software/tk8.5;C:/Program Files/Gado Control Software/tk8.5";
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "TCL_LIBRARY"; ValueData: "{pf32}/Gado Control Software/tcl8.5";
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "TK_LIBRARY"; ValueData: "{pf32}/Gado Control Software/tk8.5";
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
