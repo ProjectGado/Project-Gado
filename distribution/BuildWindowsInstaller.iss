@@ -36,7 +36,7 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 Source: "windows_(Vista_7)_gado\gado.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "windows_(Vista_7)_gado\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "lib"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "lib\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "lib\vcredist_x86.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "lib\dlls\wiaaut.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "RegisterWia.bat"; DestDir: "{app}"; Flags: ignoreversion
@@ -47,6 +47,10 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 Name: "{userappdata}\Microsoft\Internet Explorer\Quick Launch\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: quicklaunchicon
+
+[Registry]
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "TCL_LIBRARY"; ValueData: "C:/Program Files/Gado Control Software/tcl8.5";
+Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "TK_LIBRARY"; ValueData: "C:/Program Files/Gado Control Software/tk8.5";
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
