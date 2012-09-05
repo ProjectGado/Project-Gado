@@ -32,6 +32,9 @@ def default_settings():
     settings['actuator_clear_value']= 200
     settings['gado_port']           = None
     
+    settings['arm_time_overhead']   = 0.5
+    settings['arm_degrees_per_s']   = 180.0/5.0
+    
     return settings
 
 def dbpath():
