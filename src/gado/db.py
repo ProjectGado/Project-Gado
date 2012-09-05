@@ -169,7 +169,8 @@ class DBInterface():
         return row['name']
     
     def _artifact_parents(self, artifact_set):
-        row = db(db.artifact_sets.id == artifact_set).select()
+        db = self.db
+        row = db(db.artifact_sets.id == artifact_set).select().first()
         parent = row['parent']
         if parent:
             parents = self._artifact_parents(parent)
@@ -186,7 +187,7 @@ class DBInterface():
         Top of the list is the top of the artifact_set hierarchy
         '''
         db = self.db
-        parent = db(db.artifacts.id == artifact_id).select(db.artifact_set).first()['artifact_set']
+        parent = db(db.artifacts.id == artifact_id).select(db.artifacts.artifact_set).first()['artifact_set']
         parents = self._artifact_parents(parent)
         return parents
     

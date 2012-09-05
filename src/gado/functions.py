@@ -29,12 +29,9 @@ def fetch_from_queue(q, message=None, timeout=None):
             q.put(msg)
 
 def add_to_queue(q, message, arguments=None):
-    #print 'functions\tsomebody is adding %s to queue with arguments: %s' % (message, str(arguments))
-    time.sleep(1)
     q.put((message, arguments))
-    pass
 
-def _gadodir():
+def gadodir():
     n = os.name
     if n == 'nt':
         return os.path.join(os.environ['APPDATA'], 'Gado')
@@ -42,30 +39,12 @@ def _gadodir():
         return '.'
 
 def _settingspath():
-    d = _gadodir()
+    d = gadodir()
     p = os.path.join(d, 'gado.conf')
     try:
         os.makedirs(d)
     except:
         pass
-    return p
-
-def dbpath():
-    d = _gadodir()
-    p = os.path.join(d, 'databases')
-    try:
-        os.makedirs(p)
-    except:
-        print 'functions\tUnable to create the images path'
-    return p
-
-def imagespath():
-    d = _gadodir()
-    p = os.path.join(d, 'images')
-    try:
-        os.makedirs(p)
-    except:
-        print 'functions\tUnable to create the images path'
     return p
 
 def import_settings():
@@ -110,22 +89,23 @@ def new_artifact(dbi, artifact_set):
     i, inc = dbi.add_artifact(artifact_set)
     settings = import_settings()
     image_path = settings.get('image_path')
-    if not image_path: image_path = imagespath()
+    if not image_path: settings['image_path'] = imagespath()
     
-    front_path, back_path = _image_paths(dbi, i, artifact_set, inc, image_path, **settings)
+    front_path, back_path = _image_paths(dbi, i, artifact_set, inc, **settings)
     front_id = dbi.add_image(i, front_path, front=True)
     back_id = dbi.add_image(i, back_path, front=False)
     dbi.commit()
     return dict(artifact_id = i, front_id = front_id, back_id = back_id,
                 front_path = front_path, back_path = back_path)
     
-def _image_paths(dbi, artifact_id, artifact_set, incrementer, image_path,
+def _image_paths(dbi, artifact_id, artifact_set, incrementer, image_path='',
                  image_front_prefix='', image_front_postfix='_front',
                  image_back_prefix='', image_back_postfix='_back',
                  image_front_delim='', image_back_delim='',
                  image_front_filetype='tiff', image_back_filetype='jpg',
                  image_front_fn='set_incrementer',
-                 image_back_fn='set_incrementer'):
+                 image_back_fn='set_incrementer',
+                 **kwargs):
     '''
     Returns the full paths for front and back as a tuple
     
@@ -153,7 +133,8 @@ def _image_paths(dbi, artifact_id, artifact_set, incrementer, image_path,
     image_back_filetype.replace('.', '')
     
     parents = dbi.artifact_parents(artifact_id)
-    p_names = [p[0] for p in parents]
+    # p[0] is the id, p[1] is the name of the set
+    p_names = [p[1] for p in parents]
     
     if image_front_fn == 'set_incrementer':
         fn = '%s' % incrementer
@@ -217,5 +198,6 @@ def check_for_barcode(image_path, code='project gado'):
     proc = Popen(cmd, stdout=PIPE, stderr=procStdErr, shell=True)
     output, errors = proc.communicate()
     output = str(output)
+    print 'functions\tcheck_for_barcode received: %s' % output
     print "barcode was %sfound" % ('' if output.find(code) >= 0 else 'not ')
-    return output.find(code) >= 0
+    return (len(output) > 0) and (output.find(code) >= 0)

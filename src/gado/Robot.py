@@ -23,21 +23,28 @@ ARM_LOWER_BOUNDS = 0
 ARM_UPPER_BOUNDS = 190 # can we increase this?
 
 class Robot(object):
-    def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0, actuator_home_value=30, baudrate=115200, actuator_up_value=20, gado_port=None, **kargs):
-        #Grab settings
-        self.arm_home_value = arm_home_value
-        self.arm_in_value = arm_in_value
-        self.arm_out_value = arm_out_value
-        self.actuator_home_value = actuator_home_value
-        self.baudrate = baudrate
-        self.actuator_up_value = actuator_up_value
-        self.serialConnection = None
-        self.current_arm_value = arm_home_value
-        self.current_actuator_value = actuator_up_value
+    def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0,
+                 actuator_home_value=30, baudrate=115200, actuator_up_value=20,
+                 actuator_clear_value=200, gado_port=None, **kargs):
         
-        if gado_port is not None:
-            self.gado_port = gado_port
-            self.connect(gado_port)
+        #Grab settings
+        self.arm_home_value = int(arm_home_value) if arm_home_value else 0
+        self.arm_in_value = int(arm_in_value) if arm_in_value else 0
+        self.arm_out_value = int(arm_out_value) if arm_out_value else 0
+        
+        self.actuator_home_value = int(actuator_home_value) if actuator_home_value else 20
+        self.actuator_clear_value = int(actuator_clear_value) if actuator_clear_value else 200
+        self.actuator_up_value = int(actuator_up_value) if actuator_up_value else 20
+        
+        self.baudrate = baudrate
+        self.serialConnection = None
+        
+        self.current_arm_value = int(arm_home_value) if arm_home_value else 0
+        self.current_actuator_value = int(actuator_up_value) if actuator_up_value else 20
+        
+        #if gado_port is not None:
+        #    self.gado_port = gado_port
+        #    self.connect(gado_port)
         
     #Take in a dictionary of all of the robot settings and make these the current settings
     #It is important that all robot specific settings are passed, otherwise things may break
@@ -50,6 +57,7 @@ class Robot(object):
             self.arm_out_value = kwargs['arm_out_value']
             self.actuator_home_value = kwargs['actuator_home_value']
             self.actuator_up_value = kwargs['actuator_up_value']
+            self.actuator_clear_value = kwargs.get('actuator_clear_value')
             self.baudrate = kwargs['baudrate']
         except:
             print "Robot\tError when trying to update robot settings... (Make sure all settings were passed)\n Error: %s" % sys.exc_info()[0]
@@ -82,7 +90,7 @@ class Robot(object):
             return False
         
         #Delay for 2 seconds because pyserial can't immediately communicate
-        time.sleep(2)
+        time.sleep(1)
         
         if self.serialConnection.isOpen():
             print "Robot\tInside robot connect"
@@ -93,7 +101,7 @@ class Robot(object):
             self.serialConnection.write(HANDSHAKE)
             
             #give it a second to respond
-            time.sleep(1)
+            time.sleep(0.1)
             
             #Read back response (if any) and check to see if it matches the expected value
             response = self.serialConnection.read(100)
@@ -141,14 +149,19 @@ class Robot(object):
             n = self.current_arm_value - 1
         return self._moveArm(n)
     
-    def drop_actuator(self):
-        self._vacuumOn(True)
-        self.serialConnection.write('%s' % DROP_ACTUATOR)
-        self.clearSerialBuffers()
-    
     def _drop(self):
         self.serialConnection.write('%s' % DROP_ON_OUT_PILE)
         self.clearSerialBuffers()
+    
+    def _sleeptime(self, new_arm_location):
+        rotation = abs(new_arm_location - self.current_arm_value)
+        sleep_time = rotation * self.degrees_per_s
+        return sleep_time
+    
+    def _move_arm_and_sleep(self, degree):
+        sleep_time = self._sleeptime(degree)
+        self._moveArm(degree)
+        time.sleep(sleep_time)
     
     #Move the robot's arm to the specified degree (between 0-180)
     def _moveArm(self, degree):
@@ -171,7 +184,7 @@ class Robot(object):
         elif stroke > ACTUATOR_UPPER_BOUNDS:
             stroke = ACTUATOR_UPPER_BOUNDS
         self.serialConnection.write("%s%s" % (stroke, MOVE_ACTUATOR))
-        self.current_actuator_value = stroke
+        self.current_actuator_value = int(stroke)
         #Flush the serial line so we don't get any overflows in the event
         #that many commands are trying to be sent at once
         self.clearSerialBuffers()
@@ -200,27 +213,24 @@ class Robot(object):
         print 'Robot\tlifting!'
         self.serialConnection.write("%s" % LOWER_AND_LIFT)
         self.clearSerialBuffers()
-        last_height = 0
-        for i in range(6):
+        for i in range(50):
             print 'Robot\titeration %s' % i
             resp = self.returnGadoInfo()
             try:
                 print 'Robot\tresp: %s' % resp
                 current_height = json.loads(resp)['actuator_pos_s']
-                print 'Robot\tcurrent_height %s' % current_height
-                if current_height == last_height:
+                if current_height > self.actuator_clear_value:
                     return
             except:
                 pass
-            current_height = last_height
-            time.sleep(1)
+            time.sleep(0.1)
+        raise Exception('An error has occurred while lifting an image')
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware
     def pickUpObject(self):
         print "Robot\tmoving arm to in pile"
-        self._moveArm(self.arm_in_value)
-        time.sleep(5)
+        self._move_arm_and_sleep(self.arm_in_value)
         print 'Robot\tturning on vacuum'
         self.lift()
         print 'Robot\thopefully successfully picked up!'
@@ -228,24 +238,38 @@ class Robot(object):
     
     def scanObject(self):
         print 'Robot\tmoving to home value'
-        self._moveArm(self.arm_home_value)
-        time.sleep(5)
+        self._move_arm_and_sleep(self.arm_home_value)
+        
         print 'Robot\tdropping actuator'
         self._moveActuator(self.actuator_home_value)
-        time.sleep(5)
+        max_time = 5 # wait 5 seconds max for it to drop
+        last_height = 0
+        for i in range(int(max_time / 0.1)):
+            resp = self.returnGadoInfo()
+            try:
+                current_height = json.loads(resp)['actuator_pos_s']
+                if current_height == last_height:
+                    return
+                last_height = current_height
+            except:
+                pass
+            time.sleep(0.1)
         print 'Robot\tdone dropping on scanner??'
+        
         print 'Robot\tturning off the pump'
         self._vacuumOn(False)
         return True
         
     def moveToOut(self):
         print 'Robot\tlifting actuator up'
-        self._vacuumOn(True)
-        self._moveActuator(self.actuator_up_value)
-        time.sleep(5)
+        #self._vacuumOn(True)
+        #self._moveActuator(self.actuator_up_value)
+        #time.sleep(5)
+        self.lift()
         print 'Robot\tmoving to out pile'
-        self._moveArm(self.arm_out_value)
-        time.sleep(5)
+        self._move_arm_and_sleep(self.arm_out_value)
+        
+        # Drop that artifact
         self._vacuumOn(0)
         return True
     
