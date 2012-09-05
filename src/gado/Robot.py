@@ -201,7 +201,7 @@ class Robot(object):
         self.serialConnection.write("%s" % LOWER_AND_LIFT)
         self.clearSerialBuffers()
         last_height = 0
-        for i in range(6):
+        for i in range(40):
             print 'Robot\titeration %s' % i
             resp = self.returnGadoInfo()
             try:
@@ -212,8 +212,8 @@ class Robot(object):
                     return
             except:
                 pass
-            current_height = last_height
-            time.sleep(1)
+            last_height = current_height
+            time.sleep(0.2)
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware
@@ -240,9 +240,10 @@ class Robot(object):
         
     def moveToOut(self):
         print 'Robot\tlifting actuator up'
-        self._vacuumOn(True)
-        self._moveActuator(self.actuator_up_value)
-        time.sleep(5)
+        #self._vacuumOn(True)
+        #self._moveActuator(self.actuator_up_value)
+        #time.sleep(5)
+        self.lift()
         print 'Robot\tmoving to out pile'
         self._moveArm(self.arm_out_value)
         time.sleep(5)

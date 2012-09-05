@@ -363,7 +363,7 @@ class GadoSystem():
         self.camera.savePicture(DEFAULT_CAMERA_IMAGE)
         self._checkMessages()
         print "gado_sys\tattempting to check for barcode"
-        completed = check_for_barcode(DEFAULT_CAMERA_IMAGE, None)
+        completed = check_for_barcode(DEFAULT_CAMERA_IMAGE, '')
         
         print 'gado_sys\timage_path %s' % self.image_path
         
@@ -381,8 +381,8 @@ class GadoSystem():
             #os.rename(DEFAULT_CAMERA_IMAGE, back_fn)
             add_to_queue(self.q_out, messages.SET_WEBCAM_PICTURE, back_fn)
             
-            print "gado_sys\tattempting to add an image"
-            image_id = self.dbi.add_image(artifact_id, back_fn, False)
+            #print "gado_sys\tattempting to add an image"
+            #image_id = self.dbi.add_image(artifact_id, back_fn, False)
             
             print "gado_sys\tattempting to go pick up an object"
             completed = self._checkMessages() & completed
@@ -404,12 +404,12 @@ class GadoSystem():
             move(DEFAULT_SCANNED_IMAGE, front_fn)
             #os.rename(DEFAULT_SCANNED_IMAGE, front_fn)
             add_to_queue(self.q_out, messages.SET_SCANNER_PICTURE, front_fn)
-            image_id = self.dbi.add_image(artifact_id, front_fn, True)
+            #image_id = self.dbi.add_image(artifact_id, front_fn, True)
             
             completed = self._checkMessages() & completed
             self.robot.moveToOut()
             self.camera.savePicture(DEFAULT_CAMERA_IMAGE)
-            completed = check_for_barcode(DEFAULT_CAMERA_IMAGE)
+            completed = check_for_barcode(DEFAULT_CAMERA_IMAGE, '')
         self.started = False
         print "Done with robot loop"
     

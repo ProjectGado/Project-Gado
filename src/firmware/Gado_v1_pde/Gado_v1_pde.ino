@@ -18,6 +18,7 @@ int pump_current;
 int servo_min = 2000;
 int servo_max = 1350;
 double photo_change_ratio = .60;
+double version = 2.0;
 int y = 0;
 
 //bumper settings
@@ -183,7 +184,7 @@ void gotoLevelSense() {
 
 void drop()
 {
-  int v = 0;
+  int v = actuator_pos;
   int last_actuator_position = analogRead(actuator_position_pin);
   int current_actuator_position = last_actuator_position;
   
@@ -211,6 +212,7 @@ void drop()
         v = v + 10;
         
         analogWrite(actuator_pin, v);
+        actuator_pos = v;
       }
       
       last_actuator_position = current_actuator_position;
@@ -230,7 +232,7 @@ void drop()
 
 void lowerAndLift()
 {
-  int v = 0;
+  int v = actuator_pos;
   int last_actuator_position = analogRead(actuator_position_pin);
   int current_actuator_position = last_actuator_position;
   
@@ -258,6 +260,7 @@ void lowerAndLift()
         v = v + 10;
         
         analogWrite(actuator_pin, v);
+        actuator_pos = v;
       }
       
       last_actuator_position = current_actuator_position;
@@ -269,6 +272,7 @@ void lowerAndLift()
       //spin forever
       Serial.println("STOPPP!");
       analogWrite(actuator_pin, ACTUATOR_START);
+      actuator_pos = ACTUATOR_START;
       break;
     }
     //}
