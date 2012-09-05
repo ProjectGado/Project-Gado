@@ -363,7 +363,7 @@ class GadoSystem():
         self.camera.savePicture(DEFAULT_CAMERA_IMAGE)
         self._checkMessages()
         print "gado_sys\tattempting to check for barcode"
-        completed = check_for_barcode(DEFAULT_CAMERA_IMAGE)
+        completed = check_for_barcode(DEFAULT_CAMERA_IMAGE, None)
         
         print 'gado_sys\timage_path %s' % self.image_path
         
