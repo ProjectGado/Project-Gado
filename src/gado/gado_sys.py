@@ -51,9 +51,7 @@ class GadoSystem():
         elif 'wizard_run' in self.s and int(self.s['wizard_run']) == 0:
             add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
         else:
-            if not recovered:
-                add_to_queue(self.q_out, messages.READY)
-        add_to_queue(self.q_out, messages.MAIN_READY)
+            if not recovered: add_to_queue(self.q_out, messages.READY)
         
         self.db = DBFactory(**self.s).get_db()
         self.dbi = DBInterface(self.db)
