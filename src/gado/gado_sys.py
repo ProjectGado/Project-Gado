@@ -202,6 +202,7 @@ class GadoSystem():
                 elif msg[0] == messages.WEIGHTED_ARTIFACT_SET_LIST:
                     expecting_return = True
                     li = self.dbi.weighted_artifact_set_list()
+                    print 'gado_sys\t'+str(datetime.datetime.now()), 'weighted_artifact_set_list', li
                     add_to_queue(q, messages.RETURN, arguments=li)
                 elif msg[0] == messages.MAIN_ABANDON_SHIP:
                     add_to_queue(q, messages.GUI_LISTENER_DIE)
