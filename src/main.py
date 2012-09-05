@@ -15,13 +15,18 @@ A few definitions:
 '''
 from gado.GadoGui import GadoGui
 from gado.gado_sys import GadoSystem
-from Tkinter import Tk
+from Tkinter import *
 from threading import Thread, Lock
 from Queue import Queue
 from gado.functions import fetch_from_queue
+from gado.gui.SplashScreen import SplashScreen
 import gado.messages as messages
+import PIL.Image
+import ImageTk
+import ttk
 import sys
-
+import time
+    
 class GuiThread(Thread):
     def __init__(self, q_in, q_out):
         self.q_in = q_in
@@ -66,6 +71,7 @@ if __name__ == '__main__':
     
     while True:
         t2.join()
+        
         print 'main\tThread 2 Joined'
         if not q_gui_to_sys.empty():
             msg = fetch_from_queue(q_gui_to_sys)
