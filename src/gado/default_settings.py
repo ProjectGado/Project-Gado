@@ -18,11 +18,20 @@ def default_settings():
     settings['image_back_fn']       = 'set_incrementer' # other option is id
     settings['image_path']          = imagespath()
     settings['db_directory']        = dbpath()
-    settings['baudrate']            = 115200
     settings['db_filename']         = 'db.sqlite'
     settings['wizard_run']          = 0
     settings['temp_scanned_image']  = '%s/%s' % (gadodir(), 'scanned')
     settings['temp_webcam_image']   = '%s/%s' % (gadodir(), 'webcam')
+    
+    settings['baudrate']            = 115200
+    settings['arm_home_value']      = 0
+    settings['arm_in_value']        = 0
+    settings['arm_out_value']       = 0
+    settings['actuator_home_value'] = 20
+    settings['actuator_up_value']   = 20
+    settings['actuator_clear_value']= 20
+    settings['gado_port']           = None
+    
     return settings
 
 def dbpath():
