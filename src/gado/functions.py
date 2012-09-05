@@ -34,7 +34,7 @@ def add_to_queue(q, message, arguments=None):
     q.put((message, arguments))
     pass
 
-def _gadodir():
+def gadodir():
     n = os.name
     if n == 'nt':
         return os.path.join(os.environ['APPDATA'], 'Gado')
@@ -42,30 +42,12 @@ def _gadodir():
         return '.'
 
 def _settingspath():
-    d = _gadodir()
+    d = gadodir()
     p = os.path.join(d, 'gado.conf')
     try:
         os.makedirs(d)
     except:
         pass
-    return p
-
-def dbpath():
-    d = _gadodir()
-    p = os.path.join(d, 'databases')
-    try:
-        os.makedirs(p)
-    except:
-        print 'functions\tUnable to create the images path'
-    return p
-
-def imagespath():
-    d = _gadodir()
-    p = os.path.join(d, 'images')
-    try:
-        os.makedirs(p)
-    except:
-        print 'functions\tUnable to create the images path'
     return p
 
 def import_settings():

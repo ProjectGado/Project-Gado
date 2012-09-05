@@ -33,10 +33,10 @@ class Scanner():
         
         #Try and push the settings from the conf file
         try:
-            self.scanDpi = kwargs['image_front_dpi']
+            self.scanDpi = kwargs['scanner_dpi']
             self.scannerName = kwargs['scanner_name']
         except:
-            print "Error while instantiating scanner with passed settings...\nError: %s" % (sys.exc_info()[0])
+            print "Scanner\tError while instantiating scanner with passed settings...\nScanner\tError: %s" % (sys.exc_info()[0])
        
     #Take the last image scanned on the scanner and transfer it to the local computer
     #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)
@@ -61,51 +61,9 @@ class Scanner():
                 
             return True
         except:
-            print "Error while transferring image from scanner to computer...\nError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
+            print "Scanner\tError while transferring image from scanner to computer...\nScanner\tError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
     
         return False
-    #Pass in a dpi value to explicitly set the scanner to
-    #This value is also saved in the gado.conf file for future use
-    def setDPI(self, dpiValue):
-        
-        try:
-            #Find each item for the connected device
-            for item in self.device.Items:
-                
-                #Find each property for each item
-                for prop in item.Properties:
-                    
-                    #Change both the horizontal and vertical dpi
-                    if prop.Name == WIA_HORIZONTAL_RESOLUTION or prop.Name == WIA_VERTICAL_RESOLUTION:
-                        
-                        #Changing dpi settings, see if we have a valid dpi property
-                        if self.scanDpi is not None:
-                            prop.Value = self.scanDpi
-                            
-                        else:
-                            #Setting to default, 600 DPI
-                            prop.Value = DEFAULT_DPI
-                            
-                    #Change the horizontal and vertical extents (size) so we get the entire surface
-                    #of the scanner scanned instead of just a portion
-                    if prop.Name == WIA_HORIZONTAL_EXTENT:
-                        
-                        horBedSize = self._getHorizontalBedSize()
-                        
-                        horizontalExtent = int((horBedSize / SCALE_FACTOR) * float(dpiValue))
-                        
-                        prop.Value = horizontalExtent
-                        
-                    if prop.Name == WIA_VERTICAL_EXTENT:
-                        
-                        vertBedSize = self._getVerticalBedSize()
-                        
-                        verticalExtent = int((vertBedSize / SCALE_FACTOR) * float(dpiValue))
-                        
-                        prop.Value = verticalExtent
-        except:
-            print "Error trying to set dpi to value: %s...\nError: %s" % (dpiValue, sys.exc_info()[0])
-                
     
     #Using the scannerName property in gado.conf, try and connect to the scanner
     #If this property does not exist in the conf file or if the scanner is not
@@ -127,7 +85,7 @@ class Scanner():
                         
                         return True
         else:
-            print "No devide manager?!"
+            print "Scanner\tNo device manager?!"
         return False
     
     def connected(self):
@@ -141,82 +99,12 @@ class Scanner():
         
         try:
             self.device = self.wiaObject.ShowSelectDevice()
-            print "HAVE DEVICE: %s" % (self.device)
+            print "Scanner\tHAVE DEVICE: %s" % (self.device)
             self.setDPI(self.scanDpi)
             
             return True
         
         except:
-            print "Failed to select a device, you should make sure everything is connected...\nError: %s" % (sys.exc_info()[0])
+            print "Scanner\tFailed to select a device, you should make sure everything is connected...\nScanner\tError: %s" % (sys.exc_info()[0])
             
             return False
-    
-    #Get the horizontal bed size (Used to calculate extents regarding setting custom DPIs)
-    def _getHorizontalBedSize(self):
-        
-        if self.device is not None:
-            
-            for prop in self.device.Properties:
-                if prop.Name == WIA_HORIZONTAL_BED_SIZE:
-                    return prop.Value
-                
-        return -1
-    
-    #Get the vertical bed size (Used to calculate extents regarding setting custom DPIs)
-    def _getVerticalBedSize(self):
-        
-        if self.device is not None:
-            
-            for prop in self.device.Properties:
-                if prop.Name == WIA_VERTICAL_BED_SIZE:
-                    return prop.Value
-                
-        return -1
-    
-    #Enumerate through each item in the connected device's heirarchy and dump out all properties
-    #that are found
-    def dumpProperties(self):
-        
-        #Dump all information concerning connected WIA devices
-        print "WIA Devices Information:\n\n"
-        
-        for info in self.deviceManager.DeviceInfos:
-            #Each property for each device
-            for prop in info.Properties:
-                print "%s -> %s" % (prop.Name, prop.Value)
-        
-        print "\n\n"
-        
-        #Dump all commands for connected device (if it exists)
-        if self.device is not None and len(self.device.Commands) > 1:
-            print "Device Specific Commands:\n"
-            
-            for command in self.device.Commands:
-                print "%s -> %s" % (command.CommandID, command.Description)
-        
-            print "\n\n"
-            
-        #Dump all device specific properties
-        if self.device is not None:
-            print "Device Specific Properties:\n"
-            
-            for prop in self.device.Properties:
-                if prop.isReadOnly:
-                    print "%s -> %s (Read Only)" % (prop.Name, prop.Value)
-                else:
-                    print "%s -> %s (Read/Write)" % (prop.Name, prop.Value)
-                
-            print "\n\n"
-            
-        #Dump all items and their properties
-        if self.device is not None:
-            print "Item Hierarchy and Properties:\n"
-            
-            for item in self.device.Items:
-                for prop in item.Properties:
-                    if prop.IsReadOnly:
-                        print "%s -> %s (Read Only)" % (prop.Name, prop.Value)
-                    else:
-                        print "%s -> %s (Read/Write)" % (prop.Name, prop.Value)
-                        
-            print "\n\n"
