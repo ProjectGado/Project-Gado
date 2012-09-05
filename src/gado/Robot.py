@@ -176,6 +176,12 @@ class Robot(object):
         self.clearSerialBuffers()
         return degree
         
+    def get_actuator_pos(self):
+        resp = self.returnGadoInfo()
+        try:
+            return int(json.loads(resp)['actuator_pos_s'])
+        except:
+            return None
     
     #Move the robot's actuator to the specified stroke
     def _moveActuator(self, stroke):

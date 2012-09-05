@@ -66,12 +66,6 @@ class GadoGui(Frame):
         Frame.__init__(self, self.root)
     
     def load(self):
-            #print 'GadoGui\ttelling root to withdraw'
-            #self.root.withdraw()
-            #print 'GadoGui\ttelling wizard to load'
-            #self.wizard.load()
-            #print 'GadoGui\twizard.load() returned'
-        
         self.manage_sets = ManageSets(self.root, self.q_in, self.q_out, self.gui_q)
         self.selected_set = None
         self.config_window = ConfigurationWindow(self.root, self.q_in, self.q_out, self.gui_q)
@@ -127,14 +121,11 @@ class GadoGui(Frame):
         self.messageEntry.config(state=DISABLED)
     
     def createFileMenu(self, menubar=None, master=None):
-        
         self.fileMenu = Menu(self.menubar, tearoff=0)
-        self.fileMenu.add_command(label="Quit", command=master.quit)
-        
+        self.fileMenu.add_command(label="Quit", command=self.destroy)
         return self.fileMenu
     
     def createSettingsMenu(self, menubar=None, master=None):
-        
         self.settingsMenu = Menu(self.menubar, tearoff=0)
         self.settingsMenu.add_command(label="Configure Layout", command=self.show_configuration_window)
         self.settingsMenu.add_command(label="Launch Wizard", command=self.show_wizard)

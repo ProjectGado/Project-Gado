@@ -1,34 +1,17 @@
 import json, os, datetime, time, sys
-
 from subprocess import Popen, PIPE
 from gado.db import DBInterface
 
 def fetch_from_queue(q, message=None, timeout=None):
-    start = datetime.datetime.now()
     while True:
-        # we check for emptiness, instead of continuous .get()
-        # so that we can timeout if needed
-        
-        '''
-        if not q.empty():
-            msg = q.get()
-            print 'somebody is fetching from queue: %s' % msg
-            if (message and msg[0] == message) or (not message):
-                return msg
-            else:
-                q.put(msg)
-        if timeout and datetime.datetime.now() - start > timeout:
-            #l.release()
-            raise Exception("message never received")
-        '''
         msg = q.get()
-        #print 'functions\tsomebody is fetching from queue:', msg
         if (message and msg[0] == message) or (not message):
             return msg
         else:
             q.put(msg)
 
 def add_to_queue(q, message, arguments=None):
+    print 'functions\tadding to queue:', message, arguments
     q.put((message, arguments))
 
 def gadodir():

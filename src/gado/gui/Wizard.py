@@ -70,6 +70,7 @@ IN_PILE = 'Documents to be Scanned Pile'
 OUT_PILE = 'Scanned Documents Pile'
 SCANNER = 'Scanner'
 SCANNER_HEIGHT = 'Scanner Height'
+SCANNER_CLEAR = 'Scanner Clearance Height'
 
 class Wizard():
     def __init__(self, root, q_in, q_out, q_gui):
@@ -133,6 +134,11 @@ class Wizard():
         self.keyboardCallbacks[len(frameList) - 1] = 'arm_home_value'
         
         frame, next_btn = self._frame_location(SCANNER_HEIGHT)
+        frameList.append(frame)
+        nextButtons.append(next_btn)
+        self.keyboardCallbacks[len(frameList) - 1] = 'actuator_home_value'
+        
+        frame, next_btn = self._frame_location(SCANNER_CLEAR)
         frameList.append(frame)
         nextButtons.append(next_btn)
         self.keyboardCallbacks[len(frameList) - 1] = 'actuator_home_value'
@@ -408,7 +414,10 @@ class Wizard():
                 elif key == 40:
                     #add_to_queue(self.q_out, messages.MOVE_DOWN)
                     #Down arrow press
-                    value = self.robot.move_actuator(up=False)
+                    if settings_key != '':
+                        value = self.robot.move_actuator(up=False)
+                    else:
+                        pass
                     print "Wizard\tactuator move down to %s" % value
             if value != None:
                 print 'Wizard\tValue != None'
