@@ -25,15 +25,15 @@ ARM_UPPER_BOUNDS = 190 # can we increase this?
 class Robot(object):
     def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0, actuator_home_value=30, baudrate=115200, actuator_up_value=20, gado_port=None, **kargs):
         #Grab settings
-        self.arm_home_value = arm_home_value
-        self.arm_in_value = arm_in_value
-        self.arm_out_value = arm_out_value
-        self.actuator_home_value = actuator_home_value
+        self.arm_home_value = int(arm_home_value) if arm_home_value else 0
+        self.arm_in_value = int(arm_in_value) if arm_in_value else 0
+        self.arm_out_value = int(arm_out_value) if arm_out_value else 0
+        self.actuator_home_value = int(actuator_home_value) if actuator_home_value else 0
         self.baudrate = baudrate
-        self.actuator_up_value = actuator_up_value
+        self.actuator_up_value = int(actuator_up_value) if actuator_up_value else 0
         self.serialConnection = None
-        self.current_arm_value = arm_home_value
-        self.current_actuator_value = actuator_up_value
+        self.current_arm_value = int(arm_home_value) if arm_home_value else 0
+        self.current_actuator_value = int(actuator_up_value) if actuator_up_value else 0
         
         if gado_port is not None:
             self.gado_port = gado_port
@@ -171,7 +171,7 @@ class Robot(object):
         elif stroke > ACTUATOR_UPPER_BOUNDS:
             stroke = ACTUATOR_UPPER_BOUNDS
         self.serialConnection.write("%s%s" % (stroke, MOVE_ACTUATOR))
-        self.current_actuator_value = stroke
+        self.current_actuator_value = int(stroke)
         #Flush the serial line so we don't get any overflows in the event
         #that many commands are trying to be sent at once
         self.clearSerialBuffers()

@@ -65,9 +65,6 @@ class ImageSampleViewer(Frame):
         window.withdraw()
         print 'ImageSampleViewer\t__init__ completed'
     
-    def show():
-        self.window.deiconify()
-    
 
 IN_PILE = 'Documents to be Scanned Pile'
 OUT_PILE = 'Scanned Documents Pile'
@@ -155,6 +152,9 @@ class Wizard():
         
         window.protocol("WM_DELETE_WINDOW", self._quit)
         window.withdraw()
+    
+    def show():
+        self.window.deiconify()
         
     def _set_webcam(self, a):
         idx = self.webcam_dropdown.curselection()[0]
