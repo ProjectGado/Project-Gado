@@ -1,4 +1,5 @@
 from functions import gadodir
+import os
 
 def default_settings():
     settings = dict()
