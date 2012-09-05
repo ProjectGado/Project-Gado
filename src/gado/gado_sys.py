@@ -44,7 +44,7 @@ class GadoSystem():
         self.load_settings()
         
         if not self.s:
-            export_settings(default_settings())
+            export_settings(**default_settings())
             self.load_settings()
             add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
         elif 'wizard_run' in self.s and int(self.s['wizard_run']) == 0:
@@ -52,7 +52,7 @@ class GadoSystem():
         else:
             if not recovered: add_to_queue(self.q_out, messages.READY)
         
-        self.db = DBFactory(**settings).get_db()
+        self.db = DBFactory(**self.s).get_db()
         self.dbi = DBInterface(self.db)
         
         self.selected_set = None
@@ -73,7 +73,7 @@ class GadoSystem():
         
         self.scanner = Scanner(**self.s)
         self.robot = Robot(**self.s)
-        self.camera = Webcam(**seself.sttings)
+        self.camera = Webcam(**self.s)
     
     def mainloop(self):
         dbi = self.dbi
@@ -189,7 +189,7 @@ class GadoSystem():
                             add_to_queue(q, messages.RETURN, self.camera.connected())
                             return
                         else: self.camera.disconnect()
-                    self.camera = Webcam()
+                    self.camera = Webcam(**self.s)
                     print 'gado_sys\tself.camera.connected() %s' % self.camera.connected()
                     add_to_queue(q, messages.RETURN, self.camera.connected())
 

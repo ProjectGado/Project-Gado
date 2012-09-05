@@ -23,7 +23,7 @@ def default_settings():
     settings['wizard_run']          = 0
     settings['temp_scanned_image']  = '%s/%s' % (gadodir(), 'scanned')
     settings['temp_webcam_image']   = '%s/%s' % (gadodir(), 'webcam')
-    return settings()
+    return settings
 
 def dbpath():
     d = gadodir()
@@ -31,7 +31,7 @@ def dbpath():
     try:
         os.makedirs(p)
     except:
-        print 'functions\tUnable to create the images path'
+        print 'functions\tUnable to create the databases path'
     return p
 
 def imagespath():
