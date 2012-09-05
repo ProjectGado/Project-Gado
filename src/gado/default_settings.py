@@ -29,7 +29,7 @@ def default_settings():
     settings['arm_out_value']       = 0
     settings['actuator_home_value'] = 20
     settings['actuator_up_value']   = 20
-    settings['actuator_clear_value']= 20
+    settings['actuator_clear_value']= 200
     settings['gado_port']           = None
     
     return settings

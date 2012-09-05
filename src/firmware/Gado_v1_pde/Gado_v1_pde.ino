@@ -40,7 +40,7 @@ int actuator_position_pin = 2;
 int arm_servo_pin = 5;
 
 #define buttonPin A1
-#define ACTUATOR_START 50
+#define ACTUATOR_START 20
 
 const String handshake = "Im a robot!";
 
@@ -48,6 +48,9 @@ void setup()
 { 
   //Initialize serial control
   Serial.begin(115200);
+  
+  //Move the actuator to the starting position
+  analogWrite(actuator_pin, ACTUATOR_START);
   
   //Initilalize the arm servo
   pinMode(arm_servo_pin, OUTPUT);
@@ -67,9 +70,6 @@ void setup()
   
   //Shut off the pump
   analogWrite(pump_pwm, 0);  
-  
-  //Move the actuator to the starting position
-  analogWrite(actuator_pin, ACTUATOR_START);
   
   //Map degrees to whatever the servo uses
   y = map(0, 0, 180, servo_min, servo_max);

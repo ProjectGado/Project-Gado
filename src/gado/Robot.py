@@ -23,21 +23,28 @@ ARM_LOWER_BOUNDS = 0
 ARM_UPPER_BOUNDS = 190 # can we increase this?
 
 class Robot(object):
-    def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0, actuator_home_value=30, baudrate=115200, actuator_up_value=20, gado_port=None, **kargs):
+    def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0,
+                 actuator_home_value=30, baudrate=115200, actuator_up_value=20,
+                 actuator_clear_value=200, gado_port=None, **kargs):
+        
         #Grab settings
         self.arm_home_value = int(arm_home_value) if arm_home_value else 0
         self.arm_in_value = int(arm_in_value) if arm_in_value else 0
         self.arm_out_value = int(arm_out_value) if arm_out_value else 0
-        self.actuator_home_value = int(actuator_home_value) if actuator_home_value else 0
-        self.baudrate = baudrate
-        self.actuator_up_value = int(actuator_up_value) if actuator_up_value else 0
-        self.serialConnection = None
-        self.current_arm_value = int(arm_home_value) if arm_home_value else 0
-        self.current_actuator_value = int(actuator_up_value) if actuator_up_value else 0
         
-        if gado_port is not None:
-            self.gado_port = gado_port
-            self.connect(gado_port)
+        self.actuator_home_value = int(actuator_home_value) if actuator_home_value else 20
+        self.actuator_clear_value = int(actuator_clear_value) if actuator_clear_value else 200
+        self.actuator_up_value = int(actuator_up_value) if actuator_up_value else 20
+        
+        self.baudrate = baudrate
+        self.serialConnection = None
+        
+        self.current_arm_value = int(arm_home_value) if arm_home_value else 0
+        self.current_actuator_value = int(actuator_up_value) if actuator_up_value else 20
+        
+        #if gado_port is not None:
+        #    self.gado_port = gado_port
+        #    self.connect(gado_port)
         
     #Take in a dictionary of all of the robot settings and make these the current settings
     #It is important that all robot specific settings are passed, otherwise things may break
