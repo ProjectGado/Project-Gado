@@ -94,7 +94,7 @@ class GadoGui(Frame):
         
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
         self.t1.start()
-        self.root.wm_iconbitmap("gado.ico")
+        self.root.wm_iconbitmap("resources/gado.ico")
         self.root.mainloop()
         
     #################################################################################
@@ -269,10 +269,10 @@ class GadoGui(Frame):
         self.webCamLabel["text"] = "Webcam Image:"
         self.webCamLabel.grid(row=2, column=2, sticky=W, padx=10, pady=5)
         
-        image = Image.open("test.jpg")
+        image = Image.open("resouces/test.jpg")
         image.thumbnail((500, 500), Image.ANTIALIAS)
         
-        image2 = Image.open("test.jpg")
+        image2 = Image.open("resouces/test.jpg")
         image2.thumbnail((500,500), Image.ANTIALIAS)
         
         self.frontImage = ImageTk.PhotoImage(image)
