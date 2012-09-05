@@ -29,10 +29,7 @@ def fetch_from_queue(q, message=None, timeout=None):
             q.put(msg)
 
 def add_to_queue(q, message, arguments=None):
-    #print 'functions\tsomebody is adding %s to queue with arguments: %s' % (message, str(arguments))
-    time.sleep(1)
     q.put((message, arguments))
-    pass
 
 def gadodir():
     n = os.name

@@ -5,6 +5,33 @@ import ttk
 import Pmw
 import gado.messages as messages
 from gado.functions import *
+from threading import Thread
+import datetime
+
+class _RefreshHelper(Thread):
+    def __init__(self, manager, q_out, q_in, q_gui, new_set=None, delete_set=None):
+        self.manager = manager
+        self.q_out = q_out
+        self.q_in = q_in
+        self.q_gui = q_gui
+        self.new_set = new_set
+        self.delete_set = delete_set
+        Thread.__init__(self)
+    
+    def run(self):
+        print 'ManageSets\tStart time: %s' % (datetime.datetime.now())
+        if self.new_set:
+            add_to_queue(self.q_out, messages.ADD_ARTIFACT_SET_LIST, self.new_set)
+        elif self.delete_set:
+            add_to_queue(self.q_out, messages.DELETE_ARTIFACT_SET_LIST, self.delete_set)
+        
+        add_to_queue(self.q_out, messages.ARTIFACT_SET_LIST)
+        msg = fetch_from_queue(self.q_in, messages.RETURN, timeout=10)
+        self.manager.add_artifact_sets(msg[1])
+    
+    def refresh(self):
+        
+        pass
 
 class ManageSets():
     def __init__(self, root, q_in, q_out, q_gui):
@@ -57,6 +84,16 @@ class ManageSets():
         window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
         window.withdraw()
     
+    def add_artifact_sets(self, sets):
+        self.artifact_sets = sets
+        
+        # Clear current list
+        self.sets_box.delete(0, 'end')
+        for id, indented_name in self.artifact_sets:
+            self.sets_box.insert('end', indented_name)
+        
+        add_to_queue(self.q_gui, messages.REFRESH)
+    
     def hide(self):
         add_to_queue(self.q_gui, messages.RELAUNCH_LISTENER)    
         self.window.withdraw()
@@ -69,16 +106,11 @@ class ManageSets():
         idx = self.sets_box.curselection()[0]
         self.selected_set = self.artifact_sets[int(idx)][0]
         
-    def _refresh(self):
-        # Clear current list
+    def _refresh(self, new_set=None, delete_set=None):
         self.sets_box.delete(0, 'end')
-        
-        # Get the list of sets and add to the box
-        add_to_queue(self.q_out, messages.ARTIFACT_SET_LIST)
-        msg = fetch_from_queue(self.q_in, messages.RETURN, timeout=10)
-        self.artifact_sets = msg[1]
-        for id, indented_name in self.artifact_sets:
-            self.sets_box.insert('end', indented_name)
+        self.sets_box.insert('end', 'LOADING, PLEASE WAIT')
+        t = _RefreshHelper(self, self.q_out, self.q_in, self.q_gui, new_set, delete_set)
+        t.start()
     
     def _create_new_set(self):
         '''Adds a new Artifact Set to the db and refreshes the view'''
@@ -87,12 +119,8 @@ class ManageSets():
             add_to_queue(self.q_gui, messages.DISPLAY_ERROR, 'Please name your new artifact set.')
             print 'how do we show an error? the set must be named'
             return
-        add_to_queue(self.q_out,  messages.ADD_ARTIFACT_SET_LIST, dict(name=name,parent=self.selected_set))
-        msg = fetch_from_queue(self.q_in, messages.RETURN)
-        add_to_queue(self.q_gui, messages.REFRESH)
-        self._refresh()
+        self._refresh(new_set=dict(name=name, parent=self.selected_set))
     
     def _delete_set(self):
-        add_to_queue(self.q_out, messages.DELETE_ARTIFACT_SET_LIST, self.selected_set)
-        self._refresh()
+        self._refresh(delete_set=self.selected_set)
         add_to_queue(self.q_gui, messages.REFRESH)

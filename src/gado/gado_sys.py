@@ -20,6 +20,7 @@ import gado.messages as messages
 from gado.db import DBFactory, DBInterface
 from shutil import move
 from default_settings import default_settings
+import datetime
 
 class AutoConnectThread(Thread):
     def __init__(self, gado_sys, progressBar):
@@ -87,11 +88,11 @@ class GadoSystem():
             try:
                 msg = fetch_from_queue(self.q_in)
                 if msg:
-                    print "gado_sys\tfetched message from queue", msg
+                    print "gado_sys\t" + str(datetime.datetime.now()), "fetched message from queue", msg
                 if msg[0] == messages.ADD_ARTIFACT_SET_LIST:
-                    expecting_return = True
+                    expecting_return = False
                     i = dbi.add_artifact_set(**msg[1])
-                    add_to_queue(q, messages.RETURN, i)
+                    #add_to_queue(q, messages.RETURN, i)
                 
                 elif msg[0] == messages.ARTIFACT_SET_LIST:
                     expecting_return = True

@@ -17,6 +17,8 @@ from Queue import Queue
 from gado.gui.Wizard import Wizard
 from gado.gui.AdvancedSettings import AdvancedSettings
 
+import datetime
+
 class GuiListener(Thread):
     def __init__(self, q, gui_q, gui):
         self.gui_q = gui_q
@@ -89,10 +91,10 @@ class GadoGui(Frame):
             print 'GadoGui\tabout to launch the wizard!'
             
             print 'GadoGui\tadding launch wizrd to the gui queue'
+            add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
             add_to_queue(self.gui_q, messages.LAUNCH_WIZARD)
-            self.wizard.load()
+            #self.wizard.load()
         
-        add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
         self.t1.start()
         self.root.wm_iconbitmap("resources/gado.ico")
         self.root.mainloop()
@@ -203,8 +205,17 @@ class GadoGui(Frame):
         new_set_button.grid(row=1, column=1, sticky=N+S+E+W, padx=10, pady=5, columnspan=1)
     
     def show_manage_sets(self):
+        start = datetime.datetime.now()
+        
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
+        
+        queued = datetime.datetime.now()
+        print'GadoGui\tTime to add GUI_LISTENER_DIE to queue: %s' % (queued - start)
+        
         self.manage_sets.show()
+        
+        showed = datetime.datetime.now()
+        print'GadoGui\tTime to show manage_sets: %s' % (queued - start)
     
     def show_configuration_window(self):
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
