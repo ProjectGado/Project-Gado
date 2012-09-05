@@ -351,6 +351,7 @@ class Wizard():
         if self.frame_idx >= len(self.frameList):
             print 'Wizard\tnextFrame() END OF THE ROAD'
             # We're done with all the frames
+            export_settings(wizard_run=1)
             self._quit()
             return
         print 'Wizard\tnextFrame() is this a keyboard callback?'
