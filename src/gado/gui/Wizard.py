@@ -34,7 +34,10 @@ class WizardQueueListener(Thread):
         add_to_queue(self.q_out, self.message, self.args)
         if track:
             print 'WizardQueueListener\tadded message to the queue'
-        msg = fetch_from_queue(self.q_in)
+        if self.message == messages.WEBCAM_LISTING:
+            msg = fetch_from_queue(self.q_in, messages.WEBCAM_LISTING)
+        else:
+            msg = fetch_from_queue(self.q_in)
         if track:
             print 'WizardQueueListener\tfetched message from queue', msg
         self.callback(msg)
