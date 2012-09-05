@@ -35,15 +35,6 @@ class AutoConnectThread(Thread):
         print "calling stop"
         self.progressBar.stop(self.connected)
 
-DEFAULT_SETTINGS = {'baudrate' :115200,
-                    "db_filename": "db.sqlite",
-                    'wizard_run' : 0}
-                    #'webcam_name' : 'Logitech Webcam 905'}
-DEFAULT_SETTINGS['db_directory'] = dbpath()
-DEFAULT_SETTINGS['image_path'] = imagespath()
-DEFAULT_SCANNED_IMAGE = 'scanned.tiff'
-DEFAULT_CAMERA_IMAGE = 'backside.jpg'
-
 class GadoSystem():
     
     def __init__(self, q_in, q_out, recovered=False):
