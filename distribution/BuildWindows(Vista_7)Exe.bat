@@ -4,6 +4,10 @@ echo "Building the gado control software for Windows 7/Vista (x32 & x64)..."
 ::If it exists, delete the dist directory
 rmdir /s /q windows_(Vista_7)_gado
 
+::Make a new one
+md windows_(Vista_7)_gado
+md windows_(Vista_7)_gado\resources
+
 ::Create temp directories to hold source for building
 md gado
 md lib
@@ -20,8 +24,8 @@ python BuildGado(Vista_7)Exe.py py2exe
 
 ::Move test image into build directory so we don't crash
 ::(used in the image displays before we grab real images)
-copy ..\src\test.jpg windows_(Vista_7)_gado
-copy ..\src\gado.ico windows_(Vista_7)_gado
+copy ..\src\resources\test.jpg windows_(Vista_7)_gado\resources
+copy ..\src\resources\gado.ico windows_(Vista_7)_gado\resources
 
 ::Delete the build folders, it only clutters things
 rmdir /s /q build

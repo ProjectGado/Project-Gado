@@ -26,6 +26,11 @@ class WizardQueueListener(Thread):
         Thread.__init__(self)
     
     def run(self):
+        if self.message == messages.WEBCAM_LISTING: track = True
+        else: track = True
+        
+        if track:
+            print 'WizardQueueListener\ttrack=True, message=%s' % self.message
         add_to_queue(self.q_out, self.message, self.args)
         msg = fetch_from_queue(self.q_in, self.message)
         self.callback(msg)

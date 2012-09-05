@@ -43,6 +43,9 @@ class ManageSets():
         window.title("Manage Artifact Sets")
         self.window = window
         
+        #Bind key listener to window
+        self.window.bind("<Key>", self._keyboard_callback)
+        
         self.sets_box = Pmw.ScrolledListBox(
             window,
             items=(),
@@ -83,6 +86,12 @@ class ManageSets():
         
         window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
         window.withdraw()
+    
+    def _keyboard_callback(self, event):
+        key = event.keycode
+        
+        if key == 13: #Key stroke is the enter key
+            self._create_new_set()
     
     def add_artifact_sets(self, sets):
         self.artifact_sets = sets

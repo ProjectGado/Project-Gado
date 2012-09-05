@@ -101,8 +101,8 @@ setup(
               },
 
     zipfile = None,
-    console = [],
-    windows = [GUI2Exe_Target_1],
+    console = [GUI2Exe_Target_1],
+    windows = [],
     service = [],
     com_server = [],
     ctypes_com_server = []

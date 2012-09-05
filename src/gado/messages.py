@@ -40,6 +40,7 @@ RELOAD_SETTINGS = 22 # VOID
 # Other misc
 LAUNCH_WIZARD = 23 # VOID
 READY = 24 # VOID
+MAIN_READY = 24.1
 
 # Returning values
 RETURN = 19 # returning useful stuff (like db info)
