@@ -105,7 +105,7 @@ class ConfigurationWindow():
         return self.active_conf_param.find('arm') >= 0
     
     def _keyboard_callback(self, event):
-
+        
         # Delay between robot commands for consistent behavior
         t = time.time()
         q = self.q_out
@@ -117,6 +117,7 @@ class ConfigurationWindow():
                     #Left arrow press
                     value = self.robot.move_arm(clockwise=False)
                     self.new_arm_position = value
+                    print "Moved left to %s" % value
                 elif key == 39:
                     #Right arrow press
                     value = self.robot.move_arm(clockwise=True)

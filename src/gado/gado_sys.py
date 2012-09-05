@@ -59,7 +59,9 @@ class GadoSystem():
             print "gado_sys\tThe wizard was never run (at least to completion)"
             if not recovered: add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
         else:
-            if not recovered: add_to_queue(self.q_out, messages.READY)
+            if not recovered:
+                add_to_queue(self.q_out, messages.READY)
+        add_to_queue(self.q_out, messages.MAIN_READY)
         
         self.tk = Tk
         self.db = DBFactory(**settings).get_db()

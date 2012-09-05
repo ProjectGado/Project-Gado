@@ -183,7 +183,7 @@ void gotoLevelSense() {
 
 void drop()
 {
-  int v = 0;
+  int v = ACTUATOR_START;
   int last_actuator_position = analogRead(actuator_position_pin);
   int current_actuator_position = last_actuator_position;
   
@@ -220,7 +220,7 @@ void drop()
     else if(reading > 0 && ((millis() - lastDebounceTime) > debounceDelay))
     {
       //spin forever
-      Serial.println("STOPPP!");
+      Serial.println("Click Detected!");
       break;
     }
     //}
@@ -230,7 +230,7 @@ void drop()
 
 void lowerAndLift()
 {
-  int v = 0;
+  int v = ACTUATOR_START;
   int last_actuator_position = analogRead(actuator_position_pin);
   int current_actuator_position = last_actuator_position;
   
