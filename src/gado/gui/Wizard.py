@@ -26,17 +26,8 @@ class WizardQueueListener(Thread):
         Thread.__init__(self)
     
     def run(self):
-        if self.message == messages.WEBCAM_LISTING: track = True
-        else: track = True
-        
-        if track:
-            print 'WizardQueueListener\ttrack=True, message=%s' % self.message
         add_to_queue(self.q_out, self.message, self.args)
-        if track:
-            print 'WizardQueueListener\tadded message to the queue'
-        msg = fetch_from_queue(self.q_in)
-        if track:
-            print 'WizardQueueListener\tfetched message from queue', msg
+        msg = fetch_from_queue(self.q_in, self.message)
         self.callback(msg)
         
 class ImageSampleViewer(Frame):
@@ -395,25 +386,17 @@ class Wizard():
             self._last_time = t
             if self._configuring_arm():
                 if key == 37:
-                    #Left arrow press
-                    #add_to_queue(self.q_out, messages.MOVE_LEFT)
                     value = self.robot.move_arm(clockwise=False)
                     print "Wizard\tarm move left to %s" % value
                     
                 elif key == 39:
-                    #add_to_queue(self.q_out, messages.MOVE_RIGHT)
                     value = self.robot.move_arm(clockwise=True)
-                    #Right arrow press
                     print "Wizard\tarm move right to %s" % value
             else:
                 if key == 38:
-                    #add_to_queue(self.q_out, messages.MOVE_UP)
-                    #Up arrow press
                     value = self.robot.move_actuator(up=True)
                     print "Wizard\tactuator move up to %s" % value
                 elif key == 40:
-                    #add_to_queue(self.q_out, messages.MOVE_DOWN)
-                    #Down arrow press
                     if settings_key != '':
                         value = self.robot.move_actuator(up=False)
                     else:

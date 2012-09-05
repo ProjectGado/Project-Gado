@@ -58,7 +58,7 @@ class ConfigurationWindow():
     def show(self):
         self.window.deiconify()
         add_to_queue(self.q_out, messages.GIVE_ME_A_ROBOT)
-        msg = fetch_from_queue(self.q_in)
+        msg = fetch_from_queue(self.q_in, messages.GIVE_ME_A_ROBOT)
         self.robot = msg[1]
     
     def _create_dialog(self, root):

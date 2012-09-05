@@ -90,50 +90,17 @@ class GadoSystem():
                 if msg:
                     print "gado_sys\t" + str(datetime.datetime.now()), "fetched message from queue", msg
                 if msg[0] == messages.ADD_ARTIFACT_SET_LIST:
-                    expecting_return = False
                     i = dbi.add_artifact_set(**msg[1])
-                    #add_to_queue(q, messages.RETURN, i)
                 
                 elif msg[0] == messages.ARTIFACT_SET_LIST:
-                    expecting_return = True
+                    expecting_return = messages.ARTIFACT_SET_LIST
                     i = dbi.artifact_set_list()
-                    add_to_queue(q, messages.RETURN, i)
+                    add_to_queue(q, messages.ARTIFACT_SET_LIST, i)
                 
                 elif msg[0] == messages.DELETE_ARTIFACT_SET_LIST:
-                    expecting_return = False
                     dbi.delete_artifact_set(msg[1])
                 
-                elif msg[0] == messages.DROP:
-                    expecting_return = False
-                    success = robot.dropActuator()
-                    add_to_queue(q, messages.RETURN, success)
-                
-                elif msg[0] == messages.LIFT:
-                    expecting_return = False
-                    robot.lift()
-                    
-                elif msg[0] == messages.MOVE_DOWN:
-                    expecting_return = True
-                    stroke = self.robot.move_actuator(up = False)
-                    add_to_queue(q, messages.RETURN, stroke)
-                    
-                elif msg[0] == messages.MOVE_UP:
-                    expecting_return = True
-                    stroke = self.robot.move_actuator(up = True)
-                    add_to_queue(q, messages.RETURN, stroke)
-                    
-                elif msg[0] == messages.MOVE_LEFT:
-                    expecting_return = True
-                    degree = self.robot.move_arm(clockwise=False)
-                    add_to_queue(q, messages.RETURN, degree)
-                
-                elif msg[0] == messages.MOVE_RIGHT:
-                    expecting_return = True
-                    degree = self.robot.move_arm(clockwise=True)
-                    add_to_queue(q, messages.RETURN, degree)
-                
                 elif msg[0] == messages.RELOAD_SETTINGS:
-                    expecting_return = False
                     settings = import_settings()
                     self.s = settings
                     self.robot.updateSettings(**settings)
@@ -144,76 +111,75 @@ class GadoSystem():
                     self._load_settings(**settings)
                 
                 elif msg[0] == messages.RESET:
-                    expecting_return = False
                     self.robot.reset()
                 
                 elif msg[0] == messages.ROBOT_CONNECT:
-                    expecting_return = True
+                    expecting_return = messages.ROBOT_CONNECT
                     success = self.connect()
-                    add_to_queue(q, messages.RETURN, robot.connected())
+                    add_to_queue(q, messages.ROBOT_CONNECT, robot.connected())
                 
                 elif msg[0] == messages.SCANNER_CONNECT:
-                    expecting_return = True
+                    expecting_return = messages.SCANNER_CONNECT
                     try: del self.scanner
                     except: pass
                     self.scanner = Scanner(**import_settings())
-                    add_to_queue(q, messages.RETURN, self.scanner.connected())
+                    add_to_queue(q, messages.SCANNER_CONNECT, self.scanner.connected())
                 
                 elif msg[0] == messages.SCANNER_PICTURE:
-                    expecting_return = True
+                    expecting_return = messages.SCANNER_PICTURE
                     self.scanner.scanImage(DEFAULT_SCANNED_IMAGE)
-                    add_to_queue(q, messages.RETURN, DEFAULT_SCANNED_IMAGE)
+                    add_to_queue(q, messages.SCANNER_PICTURE, DEFAULT_SCANNED_IMAGE)
 
                 elif msg[0] == messages.SET_SELECTED_ARTIFACT_SET:
-                    expecting_return = True
                     self.selected_set = msg[1]
 
                 elif msg[0] == messages.START:
-                    expecting_return = False
                     self.start()
                 
                 elif msg[0] == messages.WEBCAM_LISTING:
                     print 'gado_sys\tWEBCAM_LISTING'
-                    expecting_return = True
+                    expecting_return = messages.WEBCAM_LISTING
                     #self.camera = Webcam()
                     opts = self.camera.options()
                     print 'gado_sys\tWEBCAM_LISTING - %s' % opts
-                    add_to_queue(q, messages.RETURN, opts)
+                    add_to_queue(q, messages.WEBCAM_LISTING, opts)
                 
                 elif msg[0] == messages.WEBCAM_CONNECT:
                     print 'gado_sys\tWEBCAM_CONNECT switch made it'
-                    expecting_return = True
+                    expecting_return = messages.WEBCAM_CONNECT
                     if self.camera:
                         print 'gado_sys\tCamera already exists'
                         if self.camera.connected():
                             print 'gado_sys\tAlready connected to the webcam'
-                            add_to_queue(q, messages.RETURN, self.camera.connected())
+                            add_to_queue(q, messages.WEBCAM_CONNECT, self.camera.connected())
                             return
                         else: self.camera.disconnect()
                     self.camera = Webcam(**self.s)
                     print 'gado_sys\tself.camera.connected() %s' % self.camera.connected()
-                    add_to_queue(q, messages.RETURN, self.camera.connected())
+                    add_to_queue(q, messages.WEBCAM_CONNECT, self.camera.connected())
 
                 elif msg[0] == messages.WEBCAM_PICTURE:
-                    expecting_return = True
+                    expecting_return = messages.WEBCAM_PICTURE
                     self.camera.savePicture(self.s['temp_webcam_image'])
-                    add_to_queue(q, messages.RETURN, self.s['temp_webcam_image'])
+                    add_to_queue(q, messages.WEBCAM_PICTURE, self.s['temp_webcam_image'])
                     
                 elif msg[0] == messages.WEIGHTED_ARTIFACT_SET_LIST:
-                    expecting_return = True
+                    expecting_return = messages.WEIGHTED_ARTIFACT_SET_LIST
                     li = self.dbi.weighted_artifact_set_list()
                     print 'gado_sys\t'+str(datetime.datetime.now()), 'weighted_artifact_set_list', li
-                    add_to_queue(q, messages.RETURN, arguments=li)
+                    add_to_queue(q, messages.WEIGHTED_ARTIFACT_SET_LIST, arguments=li)
+                
                 elif msg[0] == messages.MAIN_ABANDON_SHIP:
                     add_to_queue(q, messages.GUI_LISTENER_DIE)
                     add_to_queue(self.q_in, messages.MAIN_ABANDON_SHIP)
                     return
+                
                 elif msg[0] == messages.STOP or msg[0] == messages.LAST_ARTIFACT or msg[0] == messages.RESET:
                     # These commands are only relevant if the robot is already running.
-                    expecting_return = False
                     pass
+                
                 elif msg[0] == messages.GIVE_ME_A_ROBOT:
-                    add_to_queue(q, messages.RETURN, self.robot)
+                    add_to_queue(q, messages.GIVE_ME_A_ROBOT, self.robot)
                 else:
                     # add it back to the in queue, was somebody else waiting for that message?
                     add_to_queue(self.q_in, msg[0], (msg[1] if len(msg) > 1 else None))
@@ -221,7 +187,7 @@ class GadoSystem():
                 print "EXCEPTION GENERATED"
                 raise
                 if expecting_return:
-                    add_to_queue(q, messages.RETURN)
+                    add_to_queue(q, expecting_return)
     
     def set_seletcted_set(self, set_id):
         self.selected_set = None

@@ -21,6 +21,8 @@ WEBCAM_LISTING = 10.1 # RETURN ([webcam_names])
 WEBCAM_PICTURE = 11 # RETURN (path)
 WEBCAM_CONNECT = 12 # RETURN (boolean)
 
+'''
+DEPRECATED
 # Manual robot controls
 MOVE_RIGHT = 13 # RETURN (degree)
 MOVE_LEFT = 14 # RETURN (degree)
@@ -29,6 +31,7 @@ MOVE_DOWN = 16 # RETURN (stroke)
 
 DROP = 17 # VOID
 LIFT = 18 # VOID
+'''
 
 # MISC
 SET_SELECTED_ARTIFACT_SET = 21 # VOID

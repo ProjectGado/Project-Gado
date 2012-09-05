@@ -3,18 +3,31 @@ from subprocess import Popen, PIPE
 from gado.db import DBInterface
 
 def fetch_from_queue(q, message=None, timeout=None):
+    '''
+    Fetches a message from the passed queue
+    
+    If the message argument is supplied, this function will
+    wait until it finds that message.
+    '''
     while True:
         msg = q.get()
-        if (message and msg[0] == message) or (not message):
+        if (message == None) or (msg[0] == message):
             return msg
         else:
             q.put(msg)
 
 def add_to_queue(q, message, arguments=None):
-    print 'functions\tadding to queue:', message, arguments
+    '''
+    Adds a message to the queue with any passed arguments
+    '''
     q.put((message, arguments))
 
 def gadodir():
+    '''
+    The directory that the gado stuff should be stored in.
+    
+    This only works for Windows right now - it uses APPDATA
+    '''
     n = os.name
     if n == 'nt':
         return os.path.join(os.environ['APPDATA'], 'Gado')
@@ -31,6 +44,11 @@ def _settingspath():
     return p
 
 def import_settings():
+    '''
+    Reads and returns the settings from the conf file
+    
+    If the conf file does not exist, then this returns an empty dict
+    '''
     try:
         # image_path
         FH = open(_settingspath())
@@ -45,6 +63,12 @@ def import_settings():
 #Pass in a dictionary containing the values being changed
 #Can add in new key value pairs also
 def export_settings(**kwargs):
+    '''
+    Exports any passed settings.
+    
+    This function merges the passed settings with current
+    settings and then saves them to the conf file.
+    '''
     
     #Import the current configuration dictionary
     conf = import_settings()

@@ -26,7 +26,7 @@ class _RefreshHelper(Thread):
             add_to_queue(self.q_out, messages.DELETE_ARTIFACT_SET_LIST, self.delete_set)
         
         add_to_queue(self.q_out, messages.ARTIFACT_SET_LIST)
-        msg = fetch_from_queue(self.q_in, messages.RETURN, timeout=10)
+        msg = fetch_from_queue(self.q_in, messages.ARTIFACT_SET_LIST, timeout=10)
         self.manager.add_artifact_sets(msg[1])
     
     def refresh(self):

@@ -81,13 +81,6 @@ class GadoGui(Frame):
         
         msg = fetch_from_queue(self.q_in)
         self.tkloop()
-        if msg[0] == messages.LAUNCH_WIZARD:
-            print 'GadoGui\tabout to launch the wizard!'
-            
-            print 'GadoGui\tadding launch wizrd to the gui queue'
-            add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
-            add_to_queue(self.gui_q, messages.LAUNCH_WIZARD)
-            #self.wizard.load()
         
         self.t1.start()
         self.root.wm_iconbitmap("resources/gado.ico")
@@ -145,6 +138,7 @@ class GadoGui(Frame):
                 elif msg[0] == messages.DISPLAY_INFO:
                     tkMessageBox.showinfo("Info", msg[1])
                 elif msg[0] == messages.LAUNCH_WIZARD:
+                    add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
                     self.wizard.load()
                 elif msg[0] == messages.RELAUNCH_LISTENER:
                     self.t1 = GuiListener(self.q_in, self.gui_q, self)
@@ -306,14 +300,15 @@ class GadoGui(Frame):
     
     def _populate_set_dropdown(self):
         add_to_queue(self.q_out, messages.WEIGHTED_ARTIFACT_SET_LIST)
-        msg = fetch_from_queue(self.q_in, messages.RETURN)
+        msg = fetch_from_queue(self.q_in, messages.WEIGHTED_ARTIFACT_SET_LIST)
+        print 'GadoGui\t_populate_set_dropdown\t',msg
         self.weighted_sets = msg[1]
         for id, indented_name in self.weighted_sets:
             self.set_dropdown.insert('end', indented_name)
     
     def connectToRobot(self):
         add_to_queue(self.q_out, messages.ROBOT_CONNECT)
-        msg = fetch_from_queue(self.q_in, messages.RETURN, timeout=30)
+        msg = fetch_from_queue(self.q_in, messages.ROBOT_CONNECT)
         success = msg[1]
         if success:
             tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
