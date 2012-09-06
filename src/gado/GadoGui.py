@@ -20,6 +20,12 @@ from gado.gui.AdvancedSettings import AdvancedSettings
 import datetime
 
 class GuiListener(Thread):
+    '''
+    Pulls the queue of messages aimed at the GUI
+    
+    Once it has pulled a message, it determines the appropriate
+    action for handling the information.
+    '''
     def __init__(self, q, gui_q, gui):
         self.gui_q = gui_q
         self.q = q
@@ -49,6 +55,9 @@ class GuiListener(Thread):
                 add_to_queue(self.q, msg[0], (msg[1] if len(msg) > 1 else None))
 
 class GadoGui(Frame):
+    '''
+    This is the primary GUI class
+    '''
     
     def __init__(self, q_in, q_out):
         # Create the root frame
@@ -73,7 +82,7 @@ class GadoGui(Frame):
         self.advanced_settings = AdvancedSettings(self.root, self.q_in, self.q_out, self.gui_q)
         
         #Create all menus for application
-        self.createMenus(self.root)
+        self._createMenus(self.root)
         
         #Pack the widgets and create the GUI
         self.pack()
@@ -90,15 +99,15 @@ class GadoGui(Frame):
     #####                           MENU FUNCTIONS                              #####
     #################################################################################
     
-    def createMenus(self, master=None):
+    def _createMenus(self, master=None):
         #Create the drop down menu
         self.menubar = Menu(master)
         
         #Create the file menu
-        self.fileMenu = self.createFileMenu(self.menubar, master)
+        self.fileMenu = self._createFileMenu(self.menubar, master)
         
         #Create the Settings menu
-        self.settingsMenu = self.createSettingsMenu(self.menubar, master)
+        self.settingsMenu = self._createSettingsMenu(self.menubar, master)
         
         #Add both menus to the menubar
         self.menubar.add_cascade(label="File", menu=self.fileMenu)
@@ -113,12 +122,12 @@ class GadoGui(Frame):
         self.messageEntry.insert('end', text)
         self.messageEntry.config(state=DISABLED)
     
-    def createFileMenu(self, menubar=None, master=None):
+    def _createFileMenu(self, menubar=None, master=None):
         self.fileMenu = Menu(self.menubar, tearoff=0)
         self.fileMenu.add_command(label="Quit", command=self.destroy)
         return self.fileMenu
     
-    def createSettingsMenu(self, menubar=None, master=None):
+    def _createSettingsMenu(self, menubar=None, master=None):
         self.settingsMenu = Menu(self.menubar, tearoff=0)
         self.settingsMenu.add_command(label="Configure Layout", command=self.show_configuration_window)
         self.settingsMenu.add_command(label="Launch Wizard", command=self.show_wizard)
@@ -160,18 +169,18 @@ class GadoGui(Frame):
     def createWidgets(self):
         
         #Create the artifactSet section
-        self.createArtifactSetWidgets()
+        self._createArtifactSetWidgets()
         
         #Create the Control section
-        self.createControlWidgets()
+        self._createControlWidgets()
         
         #Create the status center
-        self.createStatusWidgets()
+        self._createStatusWidgets()
         
         #Create the image display widgets
-        self.createImageDisplayWidgets()
+        self._createImageDisplayWidgets()
     
-    def createArtifactSetWidgets(self):
+    def _createArtifactSetWidgets(self):
         #Create label
         artifactSetLabel = Label(self)
         artifactSetLabel["text"] = "Artifact Set: "
@@ -190,17 +199,8 @@ class GadoGui(Frame):
         new_set_button.grid(row=1, column=1, sticky=N+S+E+W, padx=10, pady=5, columnspan=1)
     
     def show_manage_sets(self):
-        start = datetime.datetime.now()
-        
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
-        
-        queued = datetime.datetime.now()
-        print'GadoGui\tTime to add GUI_LISTENER_DIE to queue: %s' % (queued - start)
-        
         self.manage_sets.show()
-        
-        showed = datetime.datetime.now()
-        print'GadoGui\tTime to show manage_sets: %s' % (queued - start)
     
     def show_configuration_window(self):
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
@@ -208,7 +208,7 @@ class GadoGui(Frame):
         
     def show_wizard(self):
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
-        self.wizard.show()
+        self.wizard.load()
     
     def set_selected_set(self, a):
         idx = self.set_dropdown.curselection()[0]
@@ -218,7 +218,7 @@ class GadoGui(Frame):
         else:
             add_to_queue(self.q_out, messages.SET_SELECTED_ARTIFACT_SET, self.selected_set)
     
-    def createControlWidgets(self):
+    def _createControlWidgets(self):
         #Create label
         self.controlLabel = Label(self)
         self.controlLabel["text"] = "Control: "
@@ -245,7 +245,7 @@ class GadoGui(Frame):
         self.resetButton["command"] = self.resetRobot
         self.resetButton.grid(row=1, column=5, sticky=N+S+E+W, padx=10, pady=5)
         
-    def createStatusWidgets(self):
+    def _createStatusWidgets(self):
         #Create label
         self.statusLabel = Label(self)
         self.statusLabel["text"] = "Status: "
@@ -255,7 +255,7 @@ class GadoGui(Frame):
         self.messageEntry = Entry(self)
         self.messageEntry.grid(row=5, column=0, columnspan=6, sticky=N+S+E+W, padx=10, pady=5)
         
-    def createImageDisplayWidgets(self):
+    def _createImageDisplayWidgets(self):
         #Scanner label
         self.scannerLabel = Label(self)
         self.scannerLabel["text"] = "Scanner Image:"
@@ -283,11 +283,11 @@ class GadoGui(Frame):
         self.backImageLabel.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=4)
     
     def destroy(self):
-        #add_to_queue(self.q, messages.SYSTEM_ABANDON_SHIP)
-        print 'GadoGui\tAdded ABANDON SHIP to the queue'
+        '''
+        Kills the GUI dead. This method must be called.
+        '''
         add_to_queue(self.q_out, messages.MAIN_ABANDON_SHIP)
         add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
-        print 'GadoGui\tCalling root.destroy()'
         sys.exit()
         
     #################################################################################
@@ -301,42 +301,24 @@ class GadoGui(Frame):
     def _populate_set_dropdown(self):
         add_to_queue(self.q_out, messages.WEIGHTED_ARTIFACT_SET_LIST)
         msg = fetch_from_queue(self.q_in, messages.WEIGHTED_ARTIFACT_SET_LIST)
-        print 'GadoGui\t_populate_set_dropdown\t',msg
         self.weighted_sets = msg[1]
         for id, indented_name in self.weighted_sets:
             self.set_dropdown.insert('end', indented_name)
     
-    def connectToRobot(self):
-        add_to_queue(self.q_out, messages.ROBOT_CONNECT)
-        msg = fetch_from_queue(self.q_in, messages.ROBOT_CONNECT)
-        success = msg[1]
-        if success:
-            tkMessageBox.showinfo("Connection Status", "Successfully connected to Gado!")
-        else:
-            tkMessageBox.showerror("Connection Status", "Could not connect to Gado, please ensure it is on and plugged into the computer")
-        return success
-    
     def startRobot(self):
-        #Function call to start robot's operation
-        print "GadoGui\tStarting robot..."
+        # Function call to start robot's operation
         add_to_queue(self.q_out, messages.START)
         
     def pauseRobot(self):
-        #Function call to pause robot's operation
-        print "GadoGui\tPausing robot..."
+        # Function call to pause robot's operation
         add_to_queue(self.q_out, messages.LAST_ARTIFACT)
-    
-    def resumeRobot(self):
-        add_to_queue(self.q_out, messages.START)
     
     def stopRobot(self):
         #Function call to stop robot's operation
-        print "Stopping robot..."
         add_to_queue(self.q_out, messages.STOP)
         
     def resetRobot(self):
         #Function call to reset the robot's operations
-        print "Restarting robot..."
         add_to_queue(self.q_out, messages.RESET)
         
     #Image transferring functions

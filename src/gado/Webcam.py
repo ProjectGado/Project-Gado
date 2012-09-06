@@ -31,12 +31,17 @@ class Webcam():
         return opts
     
     def connect(self, device_name=None, device_number=None):
+        print 'Webcam\tconnect() called'
         if device_name is not None:
+            print 'Webcam\tconnect() called with device_name %s' % device_name
             self.options(device_name=device_name)
         elif device_number is not None:
+            print 'Webcam\tconnect() called with device_number %s' % device_number
             self.options(device_number=device_number)
         else:
+            print 'Webcam\tconnect() called with NOTHING!'
             self.device = Device()
+            print 'Webcam\tsuccess?'
     
     def disconnect(self):
         del self.device

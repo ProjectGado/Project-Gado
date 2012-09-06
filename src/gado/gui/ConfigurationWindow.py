@@ -105,7 +105,6 @@ class ConfigurationWindow():
         return self.active_conf_param.find('arm') >= 0
     
     def _keyboard_callback(self, event):
-        
         # Delay between robot commands for consistent behavior
         t = time.time()
         q = self.q_out
@@ -117,7 +116,6 @@ class ConfigurationWindow():
                     #Left arrow press
                     value = self.robot.move_arm(clockwise=False)
                     self.new_arm_position = value
-                    print "Moved left to %s" % value
                 elif key == 39:
                     #Right arrow press
                     value = self.robot.move_arm(clockwise=True)
@@ -127,10 +125,11 @@ class ConfigurationWindow():
                     #Up arrow press
                     value = self.robot.move_actuator(up=True)
                     self.new_actuator_position = value
-                    print "Wizard\tactuator move up to %s" % value
+                    self.new_actuator_pos = self.robot.get_actuator_pos()
                 elif key == 40:
                     #Down arrow press
                     value = self.robot.move_actuator(up=False)
                     self.new_actuator_position = value
+                    self.new_actuator_pos = self.robot.get_actuator_pos()
                     
             self._lastTime = t

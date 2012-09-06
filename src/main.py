@@ -19,7 +19,6 @@ from Tkinter import *
 from threading import Thread, Lock
 from Queue import Queue
 from gado.functions import fetch_from_queue
-from gado.gui.SplashScreen import SplashScreen
 import gado.messages as messages
 import PIL.Image
 import ImageTk

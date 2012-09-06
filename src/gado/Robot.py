@@ -25,7 +25,8 @@ ARM_UPPER_BOUNDS = 190 # can we increase this?
 class Robot(object):
     def __init__(self, arm_home_value=0, arm_in_value=0, arm_out_value=0,
                  actuator_home_value=30, baudrate=115200, actuator_up_value=20,
-                 actuator_clear_value=200, gado_port=None, **kargs):
+                 actuator_clear_value=200, gado_port=None, arm_degrees_per_s=36,
+                 arm_time_overhead=0.5,**kargs):
         
         #Grab settings
         self.arm_home_value = int(arm_home_value) if arm_home_value else 0
@@ -41,6 +42,9 @@ class Robot(object):
         
         self.current_arm_value = int(arm_home_value) if arm_home_value else 0
         self.current_actuator_value = int(actuator_up_value) if actuator_up_value else 20
+        
+        self.arm_time_overhead = arm_time_overhead
+        self.arm_degrees_per_s = arm_degrees_per_s
         
         #if gado_port is not None:
         #    self.gado_port = gado_port
@@ -59,6 +63,8 @@ class Robot(object):
             self.actuator_up_value = kwargs['actuator_up_value']
             self.actuator_clear_value = kwargs.get('actuator_clear_value')
             self.baudrate = kwargs['baudrate']
+            self.arm_time_overhead = kwargs['arm_time_overhead']
+            self.arm_degrees_per_s = kwargs['arm_degrees_per_s']
         except:
             print "Robot\tError when trying to update robot settings... (Make sure all settings were passed)\n Error: %s" % sys.exc_info()[0]
         
@@ -101,7 +107,7 @@ class Robot(object):
             self.serialConnection.write(HANDSHAKE)
             
             #give it a second to respond
-            time.sleep(0.1)
+            time.sleep(0.5)
             
             #Read back response (if any) and check to see if it matches the expected value
             response = self.serialConnection.read(100)
@@ -124,6 +130,7 @@ class Robot(object):
         if self.serialConnection and self.serialConnection.isOpen():
             #self.serialConnection.
             self.serialConnection.write(HANDSHAKE)
+            time.sleep(0.5)
             
             #Read back response from (tentative) robot
             response = self.serialConnection.read(200)
@@ -155,7 +162,7 @@ class Robot(object):
     
     def _sleeptime(self, new_arm_location):
         rotation = abs(new_arm_location - self.current_arm_value)
-        sleep_time = rotation * self.degrees_per_s
+        sleep_time = rotation * self.arm_degrees_per_s + self.arm_time_overhead
         return sleep_time
     
     def _move_arm_and_sleep(self, degree):
@@ -175,7 +182,7 @@ class Robot(object):
         #that many commands are trying to be sent at once
         self.clearSerialBuffers()
         return degree
-        
+    
     def get_actuator_pos(self):
         resp = self.returnGadoInfo()
         try:

@@ -26,11 +26,6 @@ class WizardQueueListener(Thread):
         Thread.__init__(self)
     
     def run(self):
-        if self.message == messages.WEBCAM_LISTING: track = True
-        else: track = True
-        
-        if track:
-            print 'WizardQueueListener\ttrack=True, message=%s' % self.message
         add_to_queue(self.q_out, self.message, self.args)
         msg = fetch_from_queue(self.q_in, self.message)
         self.callback(msg)
@@ -137,7 +132,7 @@ class Wizard():
         frame, next_btn = self._frame_location(SCANNER_CLEAR)
         frameList.append(frame)
         nextButtons.append(next_btn)
-        self.keyboardCallbacks[len(frameList) - 1] = 'actuator_home_value'
+        self.keyboardCallbacks[len(frameList) - 1] = 'actuator_clear_value'
         
         frame, next_btn = self._frame_location(OUT_PILE)
         frameList.append(frame)
@@ -150,12 +145,11 @@ class Wizard():
         
         self.currentFrame = frame
         self.frame_idx = -1
-        #self.nextFrame()
         
         window.protocol("WM_DELETE_WINDOW", self._quit)
         window.withdraw()
     
-    def show():
+    def show(self):
         self.window.deiconify()
         
     def _set_webcam(self, a):
@@ -173,6 +167,7 @@ class Wizard():
         pass
     
     def load(self):
+        print  'Wizard\tload() called'
         for frame in self.frameList:
             frame.grid_forget()
         self.frameList[0].grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
@@ -193,14 +188,18 @@ class Wizard():
         frame.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W)
         
         label = Label(frame, text=label_text, font=self.labelFont)
-        label.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W, columnspan=2)
+        label.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W, columnspan=3)
         
         text = Text(frame, height=text_height, width=TEXT_WIDTH, wrap=WORD, font=self.textFont)
         text.insert(END, main_text)
         text.config(state=DISABLED)
-        text.grid(column=0, row=1, columnspan=2, padx=10, pady=20,sticky=N+S+E+W)
+        text.grid(column=0, row=1, columnspan=3, padx=10, pady=20,sticky=N+S+E+W)
         
         return frame
+    
+    def skipButton(self, frame):
+        button = Button(frame, text='Skip', command = self.skipFrame)
+        return button
     
     def nextButton(self, frame):
         button = Button(frame, text = "Next", command = self.nextFrame)
@@ -221,7 +220,7 @@ class Wizard():
         
         next_btn = self.nextButton(frame)
         next_btn.config(state=DISABLED)
-        next_btn.grid(column = 1, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
+        next_btn.grid(column = 2, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         
         return (frame, next_btn)
     
@@ -238,7 +237,7 @@ class Wizard():
         reqNextButton = self.nextButton(frame)
         reqBackButton = self.prevButton(frame)
         
-        reqNextButton.grid(column = 1, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
+        reqNextButton.grid(column = 2, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         reqBackButton.grid(column = 0, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         
         return (frame, reqNextButton)
@@ -292,7 +291,9 @@ class Wizard():
         
         nextButton = self.nextButton(frame)
         prevButton = self.prevButton(frame)
-        nextButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        skipButton = self.skipButton(frame)
+        nextButton.grid(column = 2, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        skipButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
         prevButton.grid(column = 0, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
         
         return (frame, nextButton)
@@ -315,20 +316,22 @@ class Wizard():
         frame.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W)
         
         label = Label(frame, text='Where should images be saved?', font=self.labelFont)
-        label.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W, columnspan=2)
+        label.grid(column=0, row=0, padx=10, pady=5, sticky=N+S+E+W, columnspan=3)
         
         name_textbox = Entry(frame)
-        name_textbox.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5)
+        name_textbox.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         self.name_textbox = name_textbox
         name_textbox.config(state=DISABLED)
         
         button = Button(frame, text = "Browse", command = self.loadtemplate, width = 10)
-        button.grid(column = 1, row = 1, padx = 10, pady = 5, sticky = N+S+E+W)
+        button.grid(column = 2, row = 1, padx = 10, pady = 5, sticky = N+S+E+W)
         
         nextButton = self.nextButton(frame)
         prevButton = self.prevButton(frame)
+        skipButton = self.skipButton(frame)
         
-        nextButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        nextButton.grid(column = 2, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        skipButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
         prevButton.grid(column = 0, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
         
         return (frame, nextButton)
@@ -343,6 +346,11 @@ class Wizard():
         self.name_textbox.insert('end', dirname)
         self.name_textbox.config(state=DISABLED)
         export_settings(image_path=dirname)
+    
+    def skipFrame(self):
+        # In the future, maybe it would be good log
+        # the steps that were skipped into something.
+        self.nextFrame()
     
     def nextFrame(self):
         print 'Wizard\tnextFrame() called'
@@ -402,13 +410,14 @@ class Wizard():
                     value = self.robot.move_actuator(up=True)
                     print "Wizard\tactuator move up to %s" % value
                 elif key == 40:
-                    if settings_key != '':
-                        value = self.robot.move_actuator(up=False)
-                    else:
-                        pass
+                    value = self.robot.move_actuator(up=False)
                     print "Wizard\tactuator move down to %s" % value
+                pos = self.robot.get_actuator_pos()
             if value != None:
-                print 'Wizard\tValue != None'
+                # An exception to the value rule
+                # Use the feedback from the robot itself
+                if settings_key == 'actuator_clear_value':
+                    value = pos
                 s = {settings_key : value}
                 print 'Wizard\tsettings:', s
                 export_settings(**s)

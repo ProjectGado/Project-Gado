@@ -100,7 +100,8 @@ class Scanner():
         try:
             self.device = self.wiaObject.ShowSelectDevice()
             print "Scanner\tHAVE DEVICE: %s" % (self.device)
-            self.setDPI(self.scanDpi)
+            print 'Scanner\tsetting scan dpi %s' % self.scanDpi
+            #self.setDPI(self.scanDpi)
             
             return True
         

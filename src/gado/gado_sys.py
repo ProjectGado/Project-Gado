@@ -12,7 +12,6 @@ import time, os
 from gado.pytesser import *
 from gado.Webcam import *
 import Queue
-from gado.gui.ProgressBar import *
 from gado.GadoGui import GadoGui
 from gado.Scanner import Scanner
 from gado.Webcam import Webcam
@@ -21,20 +20,6 @@ from gado.db import DBFactory, DBInterface
 from shutil import move
 from default_settings import default_settings
 import datetime
-
-class AutoConnectThread(Thread):
-    def __init__(self, gado_sys, progressBar):
-        self.gado_sys = gado_sys
-        self.progressBar = progressBar
-        Thread.__init__(self)
-        self.success = False
-    
-    def run(self):
-        self.connected = self.gado_sys.connect()
-        
-        #Stop the progress bar window
-        print "calling stop"
-        self.progressBar.stop(self.connected)
 
 class GadoSystem():
     
@@ -87,8 +72,6 @@ class GadoSystem():
             expecting_return = False
             try:
                 msg = fetch_from_queue(self.q_in)
-                if msg:
-                    print "gado_sys\t" + str(datetime.datetime.now()), "fetched message from queue", msg
                 if msg[0] == messages.ADD_ARTIFACT_SET_LIST:
                     i = dbi.add_artifact_set(**msg[1])
                 
@@ -166,7 +149,6 @@ class GadoSystem():
                 elif msg[0] == messages.WEIGHTED_ARTIFACT_SET_LIST:
                     expecting_return = messages.WEIGHTED_ARTIFACT_SET_LIST
                     li = self.dbi.weighted_artifact_set_list()
-                    print 'gado_sys\t'+str(datetime.datetime.now()), 'weighted_artifact_set_list', li
                     add_to_queue(q, messages.WEIGHTED_ARTIFACT_SET_LIST, arguments=li)
                 
                 elif msg[0] == messages.MAIN_ABANDON_SHIP:
@@ -240,11 +222,13 @@ class GadoSystem():
         add_to_queue(self.q_out, messages.SET_STATUS_TEXT, 'Connected to the scanner')
         
         if not self.camera.connected():
-            print 'gado_sys\tfailed sanity check on camera.connected()'
-            add_to_queue(self.q_out, messages.DISPLAY_ERROR,
-                'Unable to connect to the webcam. Try unplugging it and replugging it. You may need to restart this application or run the setup wizard again.')
-            self.started = False
-            return False
+            self.camera.connect()
+            if not self.camera.connected():
+                print 'gado_sys\tfailed sanity check on camera.connected()'
+                add_to_queue(self.q_out, messages.DISPLAY_ERROR,
+                    'Unable to connect to the webcam. Try unplugging it and replugging it. You may need to restart this application or run the setup wizard again.')
+                self.started = False
+                return False
         add_to_queue(self.q_out, messages.SET_STATUS_TEXT, 'Connected to the webcam')
         
         self.robot._moveActuator(self.robot.actuator_up_value)
@@ -431,6 +415,10 @@ def _connect(robot, save_settings=True):
     Scan through ports attempting to connect to the robot.
     If save_settings is True, then save the port information.
     '''
+    
+    for port in enumerate_serial_ports():
+        print 'found port %s' % port
+    
     for port in enumerate_serial_ports():
         print "attempting port %s" % port
         success = robot.connect(port)
