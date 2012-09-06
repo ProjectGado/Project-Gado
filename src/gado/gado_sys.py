@@ -99,6 +99,7 @@ class GadoSystem():
                 elif msg[0] == messages.ROBOT_CONNECT:
                     expecting_return = messages.ROBOT_CONNECT
                     success = self.connect()
+                    print 'gado_sys\tROBOT_CONNECT: %s' % success
                     add_to_queue(q, messages.ROBOT_CONNECT, robot.connected())
                 
                 elif msg[0] == messages.SCANNER_CONNECT:

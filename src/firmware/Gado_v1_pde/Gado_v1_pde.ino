@@ -40,6 +40,7 @@ int arm_servo_pin = 5;
 
 #define buttonPin A1
 #define ACTUATOR_START 25
+#define VACUUM_ON 255
 
 const String handshake = "Im a robot!";
 
@@ -129,7 +130,7 @@ void loop()
         Serial.print(handshake);  
         break;
       case 'p':
-        drop();
+        drop(false);
         break;
       case '?':
         echoAbout();
@@ -209,13 +210,14 @@ void advancedLowerAndLift()
 {
   // The big difference is that it drops, then turns on the vacuum
   // then it lifts. Standard procedure was vacuum, drop, then lift.
-  drop();
-  pumpSettings(255);
+  drop(true); // true turns the pump on at the bottom
+  
+  // lift and record
   analogWrite(actuator_pin, ACTUATOR_START);
   actuator_pos = ACTUATOR_START;
 }
 
-void drop()
+void drop(boolean enableVacuum)
 {
   int v = actuator_pos;
   int last_p = analogRead(actuator_position_pin);
@@ -275,17 +277,29 @@ void drop()
     }
     else if(reading > 0 && ((millis() - lastDebounceTime) > debounceDelay))
     {
-      //spin forever
-      Serial.println("STOPPP!");
+      // we want a delay between two positive readings two ensure that they're accurate
+      if (enableVacuum) {
+        
+      } else {
+        pumpSettings(VACUUM_ON);
+      }
       break;
     }
-    //}
+    // update the last button state
     lastButtonState = reading;
   }
 }
 
 void lowerAndLift()
 {
+   drop(false) ;
+   analogWrite(actuator_pin, ACTUATOR_START);
+   actuator_pos = ACTUATOR_START;
+}
+/*
+void lowerAndLift()
+{
+  
   int v = actuator_pos;
   int last_actuator_position = analogRead(actuator_position_pin);
   int current_actuator_position = last_actuator_position;
@@ -332,4 +346,4 @@ void lowerAndLift()
     //}
     lastButtonState = reading;
   }
-}
+}*/

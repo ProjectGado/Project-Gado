@@ -26,8 +26,10 @@ class WizardQueueListener(Thread):
         Thread.__init__(self)
     
     def run(self):
+        print 'WizardQueue\tadded %s to queue' % self.message
         add_to_queue(self.q_out, self.message, self.args)
         msg = fetch_from_queue(self.q_in, self.message)
+        print 'WizardQueue\tfetched %s to queue' % self.message
         self.callback(msg)
         
 class ImageSampleViewer(Frame):
@@ -439,7 +441,9 @@ class Wizard():
                 elif key == 40:
                     value = self.robot.move_actuator(up=False)
                     print "Wizard\tactuator move down to %s" % value
+                s = datetime.datetime.now()
                 pos = self.robot.get_actuator_pos()
+                print 'Wizard\ttime to get actuator_pos %s' % (datetime.datetime.now() - s)
             if value != None:
                 # An exception to the value rule
                 # Use the feedback from the robot itself
@@ -459,7 +463,7 @@ class Wizard():
         t.start()
     
     def robotConnectCallback(self, msg):
-        if msg[0] == messages.RETURN:
+        if msg[0] == messages.ROBOT_CONNECT:
             if msg[1]:
                 self.nextButtons[self.frame_idx].config(state=NORMAL)
                 t = WizardQueueListener(self.q_in, self.q_out, messages.GIVE_ME_A_ROBOT, None, self.robotCallback)
@@ -467,7 +471,7 @@ class Wizard():
     
     def robotCallback(self, msg):
         print 'Wizard\tgot a robot callback'
-        if msg[0] == messages.RETURN:
+        if msg[0] == messages.GIVE_ME_A_ROBOT:
             if msg[1]:
                 print 'Wizard\tassigned self.robot'
                 self.robot = msg[1]
@@ -503,7 +507,7 @@ class Wizard():
         t.start()
     
     def connectedCallback(self, msg):
-        if msg[0] == messages.RETURN:
+        if msg[0] == messages.WEBCAM_CONNECT or msg[0] == messages.SCANNER_CONNECT:
             if msg[1]:
                 self.nextButtons[self.frame_idx].config(state=NORMAL)
                 return

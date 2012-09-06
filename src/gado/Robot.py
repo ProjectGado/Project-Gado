@@ -108,7 +108,7 @@ class Robot(object):
             self.serialConnection.write(HANDSHAKE)
             
             #give it a second to respond
-            time.sleep(0.5)
+            time.sleep(1)
             
             #Read back response (if any) and check to see if it matches the expected value
             response = self.serialConnection.read(100)
