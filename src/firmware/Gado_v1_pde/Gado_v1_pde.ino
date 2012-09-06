@@ -14,7 +14,6 @@ int act_pos_sense;
 int light_value = 0;
 int fsr_value;
 int last_level;
-int pump_current;
 int servo_min = 2000;
 int servo_max = 1350;
 double photo_change_ratio = .60;
@@ -40,9 +39,12 @@ int actuator_position_pin = 2;
 int arm_servo_pin = 5;
 
 #define buttonPin A1
-#define ACTUATOR_START 30
+#define ACTUATOR_START 25
 
 const String handshake = "Im a robot!";
+
+const String firmware_version = "0.9.2";
+const String hardware_version = "2.5";
 
 void setup() 
 { 
@@ -78,7 +80,20 @@ void setup()
  
  
 void loop() 
-{ 
+{
+  // format: [VALUE]c 
+  // where VALUE is an int and c is a command
+  // list of commands:
+  // s -> move actuator (requires VALUE)
+  // a -> move arm (requires VALUE)
+  // v -> control vacuum (requires VALUE)
+  // d -> echoes location information
+  // l -> lower and lift (does not turn on vacuum)
+  // L -> upgraded lower and lift (turns on vacuum at the end)
+  // h -> handshake (returns "Im a robot!")
+  // p -> drop (drops until the sensor clicks)
+  // ? -> returns hardware and firmware version info
+  
   static int v = 0;
   if ( Serial.available()) {
     char ch = Serial.read();
@@ -98,24 +113,17 @@ void loop()
         v = 0;
         break;
       case 'v':
-        if (v > 0) {
-            digitalWrite(pump_standy, HIGH);
-            analogWrite(pump_pwm,v);
-        } else {
-            digitalWrite(pump_standy, LOW);
-            analogWrite(pump_pwm,v);
-        }
-        pump_level = v;
+        pumpSettings(v);
         v = 0;
         break;
       case 'd':
         gatherAndEcho();
-        break;  
-      case 'L':
-        printLightVsPositionData();
         break;
       case 'l':
         lowerAndLift();
+        break;
+      case 'L':
+        advancedLowerAndLift();
         break;
       case 'h':
         Serial.print(handshake);  
@@ -123,22 +131,34 @@ void loop()
       case 'p':
         drop();
         break;
+      case '?':
+        echoAbout();
+        break;
+      default:
+        // invalid command?
+        // resetting value just in case
+        v = 0;
+        break;
     }
-    if (ch != 'h' && ch != 'd' && ch != '0' && ch != '1' && ch != '2' && ch != '3' && ch != '4' && ch != '5' && ch != '6' && ch != '7' && ch != '8' && ch != '9' && ch != '\n' && ch != '\r') {
-        gatherAndEcho();
-    }
-    }
+  }  
+}
 
-    
-} 
+void pumpSettings(int v) {
+    if (v > 0) {
+      digitalWrite(pump_standy, HIGH);
+      analogWrite(pump_pwm,v);
+    } else {
+      digitalWrite(pump_standy, LOW);
+      analogWrite(pump_pwm,v);
+    }
+    pump_level = v;
+}
 
 void gatherAndEcho() {
    gatherSensorData();
    echoDataJson();
 }
 void gatherSensorData() {
-    //pump_current = analogRead(current_sense_pin);
-    pump_current = getAveragedPumpCurrent();
     light_value = analogRead(photo_sense_pin);
     act_pos_sense = analogRead(actuator_position_pin);
     fsr_value = analogRead(fsr_pin);
@@ -169,55 +189,89 @@ void echoDataJson() {
     //Last level
     Serial.print("\"last_level\": \"" + String(last_level) + "\"");
     Serial.print(",");
-    //Pump current
-    Serial.print("\"pump_current\": \"" + String(pump_current) + "\"");
-    Serial.print(",");
     //Button state
     Serial.print("\"button_state\": \"" + String(lastButtonState) + "\"");
     Serial.print("}");
     Serial.println();
 }
 
-void gotoLevelSense() {
+void echoAbout()
+{
+    Serial.print("{");
+    Serial.print("\"hardware_version\": \"" + String(arm_pos) + "\"");
+    Serial.print(",");
+    Serial.print("\"firmware_version\": \"" + String(firmware_version) + "\"");
+    Serial.print("}");
+    Serial.println();
+}
 
+void advancedLowerAndLift()
+{
+  // The big difference is that it drops, then turns on the vacuum
+  // then it lifts. Standard procedure was vacuum, drop, then lift.
+  drop();
+  pumpSettings(255);
+  analogWrite(actuator_pin, ACTUATOR_START);
+  actuator_pos = ACTUATOR_START;
 }
 
 void drop()
 {
   int v = actuator_pos;
-  int last_actuator_position = analogRead(actuator_position_pin);
-  int current_actuator_position = last_actuator_position;
-  
+  int last_p = analogRead(actuator_position_pin);
+  int curr_p = last_p;
+  int start_p = curr_p;
+  int diff = last_p - curr_p;
+    
   while(1)
   {
+    // take a current button reading
+    // sometimes this pretends to have a button press
+    // so we need to record when we noticed a click
+    // then we're going to come back to check to make
+    // sure that we had another click
     int reading = analogRead(buttonPin);
-    
-    if(reading != lastButtonState)
-    {
+
+    // record only when a change of state occurs
+    if(reading != lastButtonState) {
       lastDebounceTime = millis();
     }
     
-    //if ((millis() - lastDebounceTime) > debounceDelay)
-    //{
-    //buttonState = reading;
-    
+    // If it isn't coming up as clicked, then let's think
+    // about moving the arm further down
     if (reading == 0)
     {
-      //get the current reading of the actuator's position
-      current_actuator_position = analogRead(actuator_position_pin);
+      // get the current reading of the actuator's position
+      // this is an analog value that doesn't precisely correspond with ANYTHING
+      curr_p = analogRead(actuator_position_pin);
       
-      //Serial.println("New act pos: " + v);
-      if(current_actuator_position == last_actuator_position)
+      // how much did it change from the last time we changed v?
+      // (the values decrease as its lowered)
+      diff = start_p - curr_p; // this should be positive
+      
+      // if it's dropped by 3, then we're probably good
+      // if it stopped dropping, then we're also probably good
+      // (by good, I mean we are go for lowering it further)
+      if((diff >= 3) || (curr_p == last_p))
       {
-        v = v + 10;
+        // drop it one
+        v = v + 1;
         
-        analogWrite(actuator_pin, v);
-        actuator_pos = v;
+        // did we reach the bottom?
+        if (v > 255) {
+          break; // abandon ship!
+        }
+        
+        // tell it to drop, record where it dropped to
+        // and record this as a new start
+        analogWrite(actuator_pin, v); // drop it
+        actuator_pos = v; // record where we're going
+        start_p = curr_p; // record where we're at
       }
       
-      last_actuator_position = current_actuator_position;
-      
-      delay(50);
+      // update last position and wait a moment
+      last_p = curr_p;
+      delay(10);
     }
     else if(reading > 0 && ((millis() - lastDebounceTime) > debounceDelay))
     {
@@ -278,53 +332,4 @@ void lowerAndLift()
     //}
     lastButtonState = reading;
   }
-}
-/*
-//Drops the Z axis to pick up an item
-void lowerAndLift() {
-  int j = analogRead(photo_sense_pin);
-  double i = double(analogRead(photo_sense_pin)) / double(j);
-  while (i > photo_change_ratio) {
-        actuator_pos += 10;
-        analogWrite(actuator_pin, actuator_pos);
-        delay(500);
-        //Serial.println(i);
-        i = double(analogRead(photo_sense_pin)) / double(j);
-    }
-  last_level = actuator_pos;
-}
-*/
-
-//Calibration function
-void printLightVsPositionData() {
-  Serial.println("light, position");
-  actuator_pos = 25;
-  delay(5000);
-  while (actuator_pos < 160) {
-      analogWrite(actuator_pin, actuator_pos);
-      delay(300);
-      light_value = analogRead(photo_sense_pin);
-      Serial.print(light_value);
-      Serial.print(",");
-      Serial.println(actuator_pos);
-      actuator_pos += 1;
-  }
-}
-
-//Smooth out the pump current reading through averaging
-int getAveragedPumpCurrent() {
-  int total = 0;
-  int datapoints = 0;
-  int last = analogRead(current_sense_pin);
-  for(int i = 0; i<10; i+=1) {
-    int value = analogRead(current_sense_pin);
-    //Serial.println(abs(value - last));
-    if (abs(value - last) < 5) {
-      datapoints += 1;
-      total += value;
-      last = value;
-    }
-    delay(10);
-  }
-  return int(total/datapoints);
 }

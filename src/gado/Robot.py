@@ -6,6 +6,7 @@ MOVE_ACTUATOR = 's'
 MOVE_VACUUM = 'v'
 RETURN_CURRENT_SETTINGS = 'd'
 DROP_ACTUATOR = 'p'
+ADVANCED_LIFT = 'L'
 
 HANDSHAKE = 'h' # checks to see if we're actually talking to the robot
 LOWER_AND_LIFT = 'l' # runs a routine on the robot to pick up an artifact
@@ -238,6 +239,11 @@ class Robot(object):
                 pass
             time.sleep(0.1)
         raise Exception('An error has occurred while lifting an image')
+    
+    def advancedLift(self):
+        self.serialConnection.write("%s" % ADVANCED_LIFT)
+        time.sleep(10)
+        return
     
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware

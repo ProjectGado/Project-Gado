@@ -326,12 +326,12 @@ class GadoSystem():
             completed = self._checkMessages() & completed
             self.robot.scanObject()
             
-            print "gado_sys\tattempting to scan"
             completed = self._checkMessages() & completed
             
             # Sometimes it gets left behind :(
             try: os.remove(t_scanner_image)
             except: pass
+            print "gado_sys\tattempting to scan"
             self.scanner.scanImage(t_scanner_image)
             
             print 'gado_sys\trenaming scanned images to %s' % front_fn

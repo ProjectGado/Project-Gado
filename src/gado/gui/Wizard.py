@@ -91,26 +91,17 @@ class Wizard():
         self.frame_idx = 0
         nextButtons = []
         self.nextButtons = nextButtons
-        
         self.keyboardCallbacks = dict()
         
-        frame, next_btn = self._frame_image_path()
-        frameList.append(frame)
-        nextButtons.append(next_btn)
-        #'''
-        frame, next_btn = self._frame_welcome()
-        frameList.append(frame)
-        nextButtons.append(next_btn)
-        #'''
         frame, next_btn = self._frame_requirements()
         frameList.append(frame)
         nextButtons.append(next_btn)
-        #'''
-        frame, next_btn = self._frame_peripheral('webcam')
+        
+        frame, next_btn = self._frame_rotation()
         frameList.append(frame)
         nextButtons.append(next_btn)
-        #'''
-        frame, next_btn = self._frame_peripheral('scanner')
+        
+        frame, next_btn = self._frame_welcome()
         frameList.append(frame)
         nextButtons.append(next_btn)
         #'''
@@ -138,6 +129,18 @@ class Wizard():
         frameList.append(frame)
         nextButtons.append(next_btn)
         self.keyboardCallbacks[len(frameList) - 1] = 'arm_out_value'
+        
+        frame, next_btn = self._frame_peripheral('webcam')
+        frameList.append(frame)
+        nextButtons.append(next_btn)
+        
+        frame, next_btn = self._frame_peripheral('scanner')
+        frameList.append(frame)
+        nextButtons.append(next_btn)
+        
+        frame, next_btn = self._frame_image_path()
+        frameList.append(frame)
+        nextButtons.append(next_btn)
         
         frame, next_btn = self._frame_done()
         frameList.append(frame)
@@ -209,6 +212,28 @@ class Wizard():
         button = Button(frame, text = "Previous", command = self.prevFrame)
         return button
     
+    def _frame_rotation(self):
+        label = 'Robot Placement'
+        text = '\n\nWe hope you were able to set up the robot without too\
+               much trouble, and now we want to help you set it up in it\
+               new home. First, the robot\'s arm has a limited range of\
+               motion. On this screen we\'re going to rotate it through the\
+               full range and you\'ll need to make sure that it can reach\
+               everything.'
+        frame = self.emptyFrame(label, text, text_height=TEXT_HEIGHT - 2)
+        
+        nextButton = self.nextButton(frame)
+        prevButton = self.prevButton(frame)
+        skipButton = self.skipButton(frame)
+        
+        nextButton.grid(column = 2, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        skipButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        prevButton.grid(column = 0, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        
+        return (frame, nextButton)
+        
+        
+    
     def _frame_welcome(self):
         label = 'Welcome to the Gado Configuration Wizard!'
         text = '\n\nWe\'re going to try and connect the robot to your computer.\n\nPlease make sure it is plugged in...'
@@ -219,8 +244,10 @@ class Wizard():
         connect.grid(column = 0, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         
         next_btn = self.nextButton(frame)
+        skip_btn = self.skipButton(frame)
         next_btn.config(state=DISABLED)
         next_btn.grid(column = 2, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
+        skip_btn.grid(column = 1, row = 2, padx = 10, pady = 5, sticky = N+S+E+W)
         
         return (frame, next_btn)
     
