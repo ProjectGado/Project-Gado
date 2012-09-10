@@ -2,21 +2,27 @@ import logging, os, sys
 from gado.functions import *
 
 #Defintions
-LOGGING_LEVEL = logging.ERROR
+LOGGING_LEVEL = logging.DEBUG
 
 class Logger:
     
     def __init__(self, moduleName):
         
         #Make sure we have a logging directory we can write to
-        try:
-            path = os.mkdir(os.path.join(gadodir(), 'Logs'))
-        except:
-            if os.name == 'nt':
-                path = os.path.join(gadodir(), 'Logs')
-            else:
-                path = os.path.join('.', 'Logs')
-            pass
+        if not os.path.exists(os.path.join(gadodir(), 'Logs')):
+            try:
+                os.mkdir(os.path.join(gadodir(), 'Logs'))
+                path = os.path.joing(gadodir(), 'Logs')
+            except:
+                if os.name == 'nt':
+                    path = os.path.join(gadodir(), 'Logs')
+                    print "path: %s" % (path)
+                else:
+                    path = os.path.join('.', 'Logs')
+                    print "path: %s" % (path)
+                pass
+        else:
+            path = os.path.join(gadodir(), 'Logs')
             
         #Get an instance of the logger with the passed in module name
         self.logger = logging.getLogger(moduleName)

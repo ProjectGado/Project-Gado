@@ -114,6 +114,23 @@ class AdvancedSettings():
         window_o.withdraw()
         # \Backside
         
+        #Logging Options
+        self.window_l = Toplevel(root)
+        window_l = self.window_l
+        window_l.title('Logging Settings')
+        window_l.protocol("WM_DELETE_WINDOW", self.window_l.withdraw)
+        
+        Label(window_l, text='Desired Logging Level:').pack()
+        level_selection = Pmw.ComboBox(window_l, selectioncommand=None)
+        level_selection.pack()
+        
+        settings = [('log_level', 'log_level'),]
+        
+        for setting,label in settings:
+            pass
+        Button(window_l, text='Save', command=self.save).pack()
+        Button(window_l, text='Close', command=self.window_l.withdraw).pack()
+        window_l.withdraw()
         
         # Misc Options
         self.window_m = Toplevel(root)
@@ -154,6 +171,7 @@ class AdvancedSettings():
         Button(window, text='Backside Image Settings', command=self.window_b.deiconify).pack()
         Button(window, text='Robot Options', command=self.window_o.deiconify).pack()
         Button(window, text='Misc Settings', command=self.window_m.deiconify).pack()
+        Button(window, text='Logging Options', command=self.window_l.deiconify).pack()
         Button(window, text='Save', command=self.save).pack()
         Button(window, text='Close', command=self.window.withdraw).pack()
         
