@@ -1,4 +1,5 @@
 import serial, platform, time, sys, json
+from gado.Logger import Logger
 
 #Constants
 MOVE_ARM = 'a'
@@ -28,6 +29,10 @@ class Robot(object):
                  actuator_home_value=30, baudrate=115200, actuator_up_value=20,
                  actuator_clear_value=200, gado_port=None, arm_degrees_per_s=36,
                  arm_time_overhead=0.5,**kargs):
+        
+        #Instantiate the logger
+        loggerObj = Logger(__name__)
+        self.logger = loggerObj.getLoggerInstance()
         
         #Grab settings
         self.arm_home_value = int(arm_home_value) if arm_home_value else 0
@@ -67,7 +72,7 @@ class Robot(object):
             self.arm_time_overhead = kwargs['arm_time_overhead']
             self.arm_degrees_per_s = kwargs['arm_degrees_per_s']
         except:
-            print "Robot\tError when trying to update robot settings... (Make sure all settings were passed)\n Error: %s" % sys.exc_info()[0]
+            self.logger.exceptoin("Robot\tError when trying to update robot settings... (Make sure all settings were passed)\n Error: %s" % sys.exc_info()[0])
         
     def returnGadoInfo(self):
         if self.serialConnection.isOpen():
@@ -93,14 +98,14 @@ class Robot(object):
             self.serialConnection = serial.Serial(port, self.baudrate, timeout=1)
         except:
             #raise
-            print "Robot\tERROR CONNECTING TO SERIAL PORT: %s. Error: %s" % (port, sys.exc_info()[0])
+            self.logger.exception("Robot\tERROR CONNECTING TO SERIAL PORT: %s. Error: %s" % (port, sys.exc_info()[0]))
             return False
         
         #Delay for 2 seconds because pyserial can't immediately communicate
         time.sleep(1)
         
         if self.serialConnection.isOpen():
-            print "Robot\tInside robot connect"
+            self.logger.debug("Robot\tInside robot connect")
             #Initiate the handshake with the (potential) robot
             self.serialConnection.flush()
             self.serialConnection.flushInput()
@@ -113,7 +118,7 @@ class Robot(object):
             #Read back response (if any) and check to see if it matches the expected value
             response = self.serialConnection.read(100)
             
-            print "Robot\tresponse: \"%s\"" % response
+            self.logger.debug("Robot\tresponse: \"%s\"" % response)
             
             if response.find(HANDSHAKE_VALUE) >= 0:
                 self._moveArm(self.arm_home_value)
@@ -135,7 +140,7 @@ class Robot(object):
             
             #Read back response from (tentative) robot
             response = self.serialConnection.read(200)
-            print "Robot\tGot serial response: %s, with port %s and baud %s" % (response, self.serialConnection.port, self.serialConnection.baudrate)
+            self.logger.debug("Robot\tGot serial response: %s, with port %s and baud %s" % (response, self.serialConnection.port, self.serialConnection.baudrate))
             
             if response.find(HANDSHAKE_VALUE) >= 0:
                 return True
@@ -189,6 +194,7 @@ class Robot(object):
         try:
             return int(json.loads(resp)['actuator_pos_s'])
         except:
+            self.logger.exception("Getting actuator position")
             return None
     
     #Move the robot's actuator to the specified stroke
@@ -224,18 +230,19 @@ class Robot(object):
         
     def lift(self):
         self._vacuumOn(True)
-        print 'Robot\tlifting!'
+        self.logger.debug('Robot\tlifting!')
         self.serialConnection.write("%s" % LOWER_AND_LIFT)
         self.clearSerialBuffers()
         for i in range(50):
-            print 'Robot\titeration %s' % i
+            self.logger.debug('Robot\titeration %s' % i)
             resp = self.returnGadoInfo()
             try:
-                print 'Robot\tresp: %s' % resp
+                self.logger.debug('Robot\tresp: %s' % resp)
                 current_height = json.loads(resp)['actuator_pos_s']
                 if current_height > self.actuator_clear_value:
                     return
             except:
+                self.logger.exception('Exception while lifting')
                 pass
             time.sleep(0.1)
         raise Exception('An error has occurred while lifting an image')
@@ -248,18 +255,18 @@ class Robot(object):
     #Move the actuator until the click sensor is engaged, then turn on the vacuum and raise
     #the actuator. The bulk of this code is going to be executed from the arduino's firmware
     def pickUpObject(self):
-        print "Robot\tmoving arm to in pile"
+        self.logger.debug("Robot\tmoving arm to in pile")
         self._move_arm_and_sleep(self.arm_in_value)
-        print 'Robot\tturning on vacuum'
+        self.logger.debug('Robot\tturning on vacuum')
         self.lift()
-        print 'Robot\thopefully successfully picked up!'
+        self.logger.debug('Robot\thopefully successfully picked up!')
         return True
     
     def scanObject(self):
-        print 'Robot\tmoving to home value'
+        self.logger.debug('Robot\tmoving to home value')
         self._move_arm_and_sleep(self.arm_home_value)
         
-        print 'Robot\tdropping actuator'
+        self.logger.debug('Robot\tdropping actuator')
         self._moveActuator(self.actuator_home_value)
         max_time = 5 # wait 5 seconds max for it to drop
         last_height = 0
@@ -271,21 +278,22 @@ class Robot(object):
                     return
                 last_height = current_height
             except:
+                self.logger.exception('Exception while scanning artifact')
                 pass
             time.sleep(0.1)
-        print 'Robot\tdone dropping on scanner??'
+        self.logger.debug('Robot\tdone dropping on scanner??')
         
-        print 'Robot\tturning off the pump'
+        self.logger.debug('Robot\tturning off the pump')
         self._vacuumOn(False)
         return True
         
     def moveToOut(self):
-        print 'Robot\tlifting actuator up'
+        self.logger.debug('Robot\tlifting actuator up')
         #self._vacuumOn(True)
         #self._moveActuator(self.actuator_up_value)
         #time.sleep(5)
         self.lift()
-        print 'Robot\tmoving to out pile'
+        self.logger.debug('Robot\tmoving to out pile')
         self._move_arm_and_sleep(self.arm_out_value)
         
         # Drop that artifact
@@ -294,7 +302,7 @@ class Robot(object):
     
     #Pause the robot in its current step
     def pause(self):
-        print "Robot\tI'm paused inside the Robot object"
+        self.logger.debug("Robot\tI'm paused inside the Robot object")
         pass
     
     #Stop the robot process and reset

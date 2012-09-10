@@ -8,6 +8,7 @@ from threading import Thread
 import gado.messages as messages
 import Image, ImageTk
 import Pmw
+from gado.Logger import Logger
 
 #Constants
 WINDOW_HEIGHT = 300
@@ -18,6 +19,11 @@ TEXT_WIDTH = 50
 
 class WizardQueueListener(Thread):
     def __init__(self, q_in, q_out, message, args, callback):
+        
+        #Instantiate the logger
+        loggerObj = Logger(self.__class__.__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         self.q_in = q_in
         self.q_out = q_out
         self.message = message
@@ -26,37 +32,42 @@ class WizardQueueListener(Thread):
         Thread.__init__(self)
     
     def run(self):
-        print 'WizardQueue\tadded %s to queue' % self.message
+        self.logger.debug('WizardQueue\tadded %s to queue' % self.message)
         add_to_queue(self.q_out, self.message, self.args)
         msg = fetch_from_queue(self.q_in, self.message)
-        print 'WizardQueue\tfetched %s to queue' % self.message
+        self.logger.debug('WizardQueue\tfetched %s to queue' % self.message)
         self.callback(msg)
         
 class ImageSampleViewer(Frame):
     def __init__(self, root, path):
+        
+        #Instantiate the logger
+        loggerObj = Logger(self.__class__.__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         self.path = path
         self.root = root
         Frame.__init__(self, self.root)
                 
-        print 'ImageSampleViewer\tOpening image'
+        self.logger.debug('ImageSampleViewer\tOpening image')
         image = Image.open(path)
-        print 'ImageSampleViewer\tResizing image'
+        self.logger.debug('ImageSampleViewer\tResizing image')
         image.thumbnail((500, 500), Image.ANTIALIAS)
         
-        print 'ImageSampleViewer\tPhotoImage(image)'
+        self.logger.debug('ImageSampleViewer\tPhotoImage(image)')
         image_tk = ImageTk.PhotoImage(image)
-        print 'ImageSampleViewer\tCreating the image\'s label'
+        self.logger.debug('ImageSampleViewer\tCreating the image\'s label')
         image_label = Label(self, image=image_tk)
-        print 'ImageSampleViewer\tAssiging image_tk to .photo'
+        self.logger.debug('ImageSampleViewer\tAssiging image_tk to .photo')
         image_label.photo = image_tk
-        print 'ImageSampleViewer\tAdding the label to the grid'
+        self.logger.debug('ImageSampleViewer\tAdding the label to the grid')
         image_label.grid(row=0, column = 0, sticky=N+S+E+W, padx=10, pady=5)
         
-        print 'ImageSampleViewer\tSetting up window closing protocol'
+        self.logger.debug('ImageSampleViewer\tSetting up window closing protocol')
         window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
-        print 'ImageSampleViewer\tWithdrawing the window'
+        self.logger.debug('ImageSampleViewer\tWithdrawing the window')
         window.withdraw()
-        print 'ImageSampleViewer\t__init__ completed'
+        self.logger.debug('ImageSampleViewer\t__init__ completed')
     
 
 IN_PILE = 'Documents to be Scanned Pile'
@@ -67,6 +78,11 @@ SCANNER_CLEAR = 'Scanner Clearance Height'
 
 class Wizard():
     def __init__(self, root, q_in, q_out, q_gui):
+        
+        #Instantiate the logger
+        loggerObj = Logger(self.__class__.__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         self.q_in = q_in # read by wizard
         self.q_out = q_out # goes to gado_sys
         self.q_gui = q_gui # goes to GadoGui
@@ -161,7 +177,7 @@ class Wizard():
         idx = self.webcam_dropdown.curselection()[0]
         name = self.webcams[int(idx)][1]
         export_settings(webcam_name=name)
-        print 'Wizard\tI just saved the webcam_name as %s' % name
+        self.logger.debug('Wizard\tI just saved the webcam_name as %s' % name)
     
     def webcam_options(self, msg):
         opts = msg[1]
@@ -172,7 +188,7 @@ class Wizard():
         pass
     
     def load(self):
-        print  'Wizard\tload() called'
+        self.logger.debug( 'Wizard\tload() called')
         for frame in self.frameList:
             frame.grid_forget()
         self.frameList[0].grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
@@ -369,7 +385,7 @@ class Wizard():
         dirname = tkFileDialog.askdirectory(parent=self.root,
                                             initialdir=".",
                                             title='Please select a directory')
-        print 'Wizard\tGot a directory name!'
+        self.logger.debug('Wizard\tGot a directory name!')
         self.name_textbox.config(state=NORMAL)
         self.name_textbox.delete(0, 'end')
         self.name_textbox.insert('end', dirname)
@@ -382,20 +398,20 @@ class Wizard():
         self.nextFrame()
     
     def nextFrame(self):
-        print 'Wizard\tnextFrame() called'
-        print 'Wizard\tnextFrame() forgetting current frame'
+        self.logger.debug('Wizard\tnextFrame() called')
+        self.logger.debug('Wizard\tnextFrame() forgetting current frame')
         self.currentFrame.grid_forget()
         self.frame_idx += 1
-        print 'Wizard\tnextFrame() next index: %s' % self.frame_idx
+        self.logger.debug('Wizard\tnextFrame() next index: %s' % self.frame_idx)
         if self.frame_idx >= len(self.frameList):
-            print 'Wizard\tnextFrame() END OF THE ROAD'
+            self.logger.debug('Wizard\tnextFrame() END OF THE ROAD')
             # We're done with all the frames
             export_settings(wizard_run=1)
             self._quit()
             return
-        print 'Wizard\tnextFrame() is this a keyboard callback?'
+        self.logger.debug('Wizard\tnextFrame() is this a keyboard callback?')
         nextFrame = self.frameList[self.frame_idx]
-        print 'Wizard\tnextFrame() forcing nextFrame to be visible'
+        self.logger.debug('Wizard\tnextFrame() forcing nextFrame to be visible')
         nextFrame.grid(column = 0, row = 0, padx = 10, pady = 5, sticky = N+S+E+W)
         self.currentFrame = nextFrame
     
@@ -419,7 +435,8 @@ class Wizard():
         return 'arm' in self.keyboardCallbacks[self.frame_idx]
     
     def _keyboard_callback(self, event):
-        print 'Wizard\tKeyboard Event!'
+        self.logger.debug('Wizard\tKeyboard Event!')
+        
         t = time.time()
         value = None
         settings_key = self.keyboardCallbacks[self.frame_idx]
@@ -429,28 +446,28 @@ class Wizard():
             if self._configuring_arm():
                 if key == 37:
                     value = self.robot.move_arm(clockwise=False)
-                    print "Wizard\tarm move left to %s" % value
+                    self.logger.debug("Wizard\tarm move left to %s" % value)
                     
                 elif key == 39:
                     value = self.robot.move_arm(clockwise=True)
-                    print "Wizard\tarm move right to %s" % value
+                    self.logger.debug("Wizard\tarm move right to %s" % value)
             else:
                 if key == 38:
                     value = self.robot.move_actuator(up=True)
-                    print "Wizard\tactuator move up to %s" % value
+                    self.logger.debug("Wizard\tactuator move up to %s" % value)
                 elif key == 40:
                     value = self.robot.move_actuator(up=False)
-                    print "Wizard\tactuator move down to %s" % value
+                    self.logger.debug("Wizard\tactuator move down to %s" % value)
                 s = datetime.datetime.now()
                 pos = self.robot.get_actuator_pos()
-                print 'Wizard\ttime to get actuator_pos %s' % (datetime.datetime.now() - s)
+                self.logger.debug('Wizard\ttime to get actuator_pos %s' % (datetime.datetime.now() - s))
             if value != None:
                 # An exception to the value rule
                 # Use the feedback from the robot itself
                 if settings_key == 'actuator_clear_value':
                     value = pos
                 s = {settings_key : value}
-                print 'Wizard\tsettings:', s
+                self.logger.debug('Wizard\tsettings:', s)
                 export_settings(**s)
     
     ##############################################################################
@@ -470,10 +487,10 @@ class Wizard():
                 t.start()
     
     def robotCallback(self, msg):
-        print 'Wizard\tgot a robot callback'
+        self.logger.debug('Wizard\tgot a robot callback')
         if msg[0] == messages.GIVE_ME_A_ROBOT:
             if msg[1]:
-                print 'Wizard\tassigned self.robot'
+                self.logger.debug('Wizard\tassigned self.robot')
                 self.robot = msg[1]
     
     def connectToScanner(self):

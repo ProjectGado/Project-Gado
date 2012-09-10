@@ -1,9 +1,15 @@
 from VideoCapture import Device
+from gado.Logger import Logger
 
 class Webcam():
     def __init__(self, webcam_name=None, webcam_id=None, **kargs):
+        
+        #Instantiate the logger
+        loggerObj = Logger(__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         self.device = None
-        print 'Webcam\t__init__ called with webcam_name=%s and webcam_id=%s' % (webcam_name, webcam_id)
+        self.logger.debug('Webcam\t__init__ called with webcam_name=%s and webcam_id=%s' % (webcam_name, webcam_id))
         if webcam_name is not None:
             self.connect(device_name=webcam_name)
         elif webcam_id is not None:
@@ -11,11 +17,11 @@ class Webcam():
     
     def options(self, device_name=None, device_number=None):
         # I doubt people will have more than 5 webcams plugged in
-        print 'Webcam\toptions() called'
+        self.logger.debug( 'Webcam\toptions() called')
         opts = []
         for i in range(2):
             try:
-                print 'Webcam\toptions - attempting to connect to %s' % i
+                self.logger.debug('Webcam\toptions - attempting to connect to %s' % i)
                 d = Device(devnum=i)
                 if device_name is not None and device_name == d.getDisplayName():
                     del self.device
@@ -26,22 +32,23 @@ class Webcam():
                 opts.append((i, d.getDisplayName()))
                 del d
             except:
+                self.logger.exception("Exception while setting webcam options")
                 pass
-        print 'Webcam\toptions() returning %s' % opts
+        self.logger.debug('Webcam\toptions() returning %s' % opts)
         return opts
     
     def connect(self, device_name=None, device_number=None):
-        print 'Webcam\tconnect() called'
+        self.logger.debug('Webcam\tconnect() called')
         if device_name is not None:
-            print 'Webcam\tconnect() called with device_name %s' % device_name
+            self.logger.debug('Webcam\tconnect() called with device_name %s' % device_name)
             self.options(device_name=device_name)
         elif device_number is not None:
-            print 'Webcam\tconnect() called with device_number %s' % device_number
+            self.logger.debug('Webcam\tconnect() called with device_number %s' % device_number)
             self.options(device_number=device_number)
         else:
-            print 'Webcam\tconnect() called with NOTHING!'
+            self.logger.error('Webcam\tconnect() called with NOTHING!')
             self.device = Device()
-            print 'Webcam\tsuccess?'
+            self.logger.debug('Webcam\tsuccess?')
     
     def disconnect(self):
         del self.device

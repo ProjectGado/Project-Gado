@@ -7,9 +7,15 @@ import gado.messages as messages
 from gado.functions import *
 from threading import Thread
 import datetime
+from gado.Logger import Logger
 
 class _RefreshHelper(Thread):
     def __init__(self, manager, q_out, q_in, q_gui, new_set=None, delete_set=None):
+        
+        #Instantiate the logger
+        loggerObj = Logger(__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         self.manager = manager
         self.q_out = q_out
         self.q_in = q_in
@@ -19,7 +25,7 @@ class _RefreshHelper(Thread):
         Thread.__init__(self)
     
     def run(self):
-        print 'ManageSets\tStart time: %s' % (datetime.datetime.now())
+        self.logger.debug('ManageSets\tStart time: %s' % (datetime.datetime.now()))
         if self.new_set:
             add_to_queue(self.q_out, messages.ADD_ARTIFACT_SET_LIST, self.new_set)
         elif self.delete_set:
@@ -126,7 +132,7 @@ class ManageSets():
         name = self.name_textbox.get()
         if not name:
             add_to_queue(self.q_gui, messages.DISPLAY_ERROR, 'Please name your new artifact set.')
-            print 'how do we show an error? the set must be named'
+            self.logger.error('how do we show an error? the set must be named')
             return
         self._refresh(new_set=dict(name=name, parent=self.selected_set))
     
