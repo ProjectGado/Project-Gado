@@ -8,6 +8,7 @@ from gado.functions import *
 import tkFileDialog
 
 class AdvancedSettings():
+    
     def __init__(self, root, q_in, q_out, q_gui):
         self.root = root
         self.q_in = q_in
@@ -121,13 +122,22 @@ class AdvancedSettings():
         window_l.protocol("WM_DELETE_WINDOW", self.window_l.withdraw)
         
         Label(window_l, text='Desired Logging Level:').pack()
-        level_selection = Pmw.ComboBox(window_l, selectioncommand=None)
-        level_selection.pack()
+        self.level_selection = Pmw.ComboBox(window_l, selectioncommand=lambda val: self._updateDebugLevel(self.level_selection.get()))
+        self.level_selection.pack()
+        
+        #Populate combobox with different loglevels
+        self._populateLevelComboBox()
+        self.level_selection.selectitem(0)
+        
+        self.logLevelEntry = Entry(window_l, name="logging_level")
+        
+        #e = self.level_selection.get()
+        
+        self.entries.append(self.logLevelEntry)
         
         settings = [('log_level', 'log_level'),]
         
-        for setting,label in settings:
-            pass
+            
         Button(window_l, text='Save', command=self.save).pack()
         Button(window_l, text='Close', command=self.window_l.withdraw).pack()
         window_l.withdraw()
@@ -177,14 +187,25 @@ class AdvancedSettings():
         
         window.withdraw()
     
+    def _populateLevelComboBox(self):
+        levels = ['Debug', 'Info', 'Error', 'Exception', 'Critical']
+        
+        for level in levels:
+            self.level_selection.insert('end', level)
+    
     def show(self):
         self.window.deiconify()
     
     def save(self):
         s = dict()
         for e in self.entries:
+            print "entry: %s" % str(e)
             s[e._name] = e.get()
+            print "val: %s" % (s[e._name])
         export_settings(**s)
+        
+    def _updateDebugLevel(self, level):
+        self.logLevelEntry.insert('end', level)
         
     def imagepath(self):
         dirname = tkFileDialog.askdirectory(parent=self.window,

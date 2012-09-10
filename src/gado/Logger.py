@@ -1,13 +1,40 @@
 import logging, os, sys
 from gado.functions import *
 
-#Defintions
+#Defintions (Default)
 LOGGING_LEVEL = logging.DEBUG
-
+        
 class Logger:
-    
+        
     def __init__(self, moduleName):
         
+        #Grab the settings so that we know which level to log at
+        settings = import_settings()
+        
+        #Set the current logging level
+        try:
+            LOGGING_LEVEL = settings['log_level']
+            
+            #Convert the unicode to the actual enum's value
+            if LOGGING_LEVEL == u'Error':
+                LOGGING_LEVEL = logging.ERROR
+            elif LOGGING_LEVEL == u'Debug':
+                LOGGING_LEVEL = logging.DEBUG
+            elif LOGGING_LEVEL == u'Info':
+                LOGGING_LEVEL = logging.INFO
+            elif LOGGING_LEVEL == u'Exception':
+                LOGGING_LEVEL = logging.EXCEPTION
+            elif LOGGING_LEVEL == u'Critical':
+                LOGGING_LEVEL = logging.CRITICAL
+            else:
+                #Default settings
+                LOGGING_LEVEL = logging.DEBUG
+            
+        except:
+            #Don't have a conf, go with default level of logging
+            LOGGING_LEVEL = logging.DEBUG
+            pass
+            
         #Make sure we have a logging directory we can write to
         if not os.path.exists(os.path.join(gadodir(), 'Logs')):
             try:
@@ -50,6 +77,7 @@ class Logger:
         
         #Add the file handler to the logger
         self.logger.addHandler(fh)
+        
         
     def getLoggerInstance(self):
         

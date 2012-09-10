@@ -35,7 +35,7 @@ def default_settings():
     settings['arm_time_overhead']   = 0.5
     settings['arm_degrees_per_s']   = 180.0/5.0
     
-    settings['log_level']           = 'logging.DEBUG'
+    settings['log_level']           = 'Debug'
     
     return settings
 
