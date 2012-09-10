@@ -3,7 +3,6 @@ from Tkinter import *
 import tkMessageBox
 import Image, ImageTk
 import ttk
-#from gado.ProgressMeter import *
 import Pmw
 import time
 import platform
@@ -60,21 +59,34 @@ class GadoGui(Frame):
     '''
     
     def __init__(self, q_in, q_out):
-        # Create the root frame
+        # Load in the system-to-gui queue and the gui-to-system queue
         self.q_in = q_in
         self.q_out = q_out
+        
+        #Start the Gui's personal queue
         self.gui_q = Queue()
         self.t1 = GuiListener(q_in, self.gui_q, self)
+        
+        #Instantiate the root frame of the Gui
         self.root = Tk()
         
-        #Set the title and the icon
+        #Set the title
         self.root.title("Gado Control Software")
         
+        #Whenever the red x on the window is clicked, destroy the entire Gui
         self.root.protocol('WM_DELETE_WINDOW', self.destroy)
+        
         #Initialize the master frame
         Frame.__init__(self, self.root)
     
     def load(self):
+        '''
+        Loads in all elements of the Gui
+        
+        This includes all windows, menus and widgets
+        '''
+        
+        #Load up all possible windows
         self.manage_sets = ManageSets(self.root, self.q_in, self.q_out, self.gui_q)
         self.selected_set = None
         self.config_window = ConfigurationWindow(self.root, self.q_in, self.q_out, self.gui_q)
@@ -91,8 +103,13 @@ class GadoGui(Frame):
         msg = fetch_from_queue(self.q_in)
         self.tkloop()
         
+        #Start up the Gui Listener
         self.t1.start()
+        
+        #Set the root's icon for the title bar
         self.root.wm_iconbitmap("resources/gado.ico")
+        
+        #Start up the main Gui loop
         self.root.mainloop()
         
     #################################################################################
@@ -100,6 +117,11 @@ class GadoGui(Frame):
     #################################################################################
     
     def _createMenus(self, master=None):
+        '''
+        Creates all of the menus in the application in addition to
+        all of the entries within those menus
+        '''
+        
         #Create the drop down menu
         self.menubar = Menu(master)
         
@@ -117,31 +139,54 @@ class GadoGui(Frame):
         master.config(menu=self.menubar)
     
     def changeStatusText(self, text):
+        '''
+        Changes the status text box's current text
+        '''
+        
         self.messageEntry.config(state=NORMAL)
         self.messageEntry.delete(0, 'end')
         self.messageEntry.insert('end', text)
         self.messageEntry.config(state=DISABLED)
     
     def _createFileMenu(self, menubar=None, master=None):
+        '''
+        Creating the file menu and it's individual entries
+        '''
+        
         self.fileMenu = Menu(self.menubar, tearoff=0)
         self.fileMenu.add_command(label="Quit", command=self.destroy)
+        
         return self.fileMenu
     
     def _createSettingsMenu(self, menubar=None, master=None):
+        '''
+        Create the settings menu and it's individual entries
+        '''
+        
         self.settingsMenu = Menu(self.menubar, tearoff=0)
         self.settingsMenu.add_command(label="Configure Layout", command=self.show_configuration_window)
         self.settingsMenu.add_command(label="Launch Wizard", command=self.show_wizard)
         self.settingsMenu.add_command(label="Advanced Settings", command = self.advanced_settings.show)
+        
         return self.settingsMenu
    
     def show_advanced_settings(self):
+        '''
+        Bring the advanced settings menu to the front of the Gui
+        '''
+        
         self.advanced_settings.show()
    
     def tkloop(self):
+        '''
+        Loop for internal Gui actions
+        '''
+        
         try:
             while True:
                 msg = self.gui_q.get_nowait()
                 print 'GadoGui\tmsg:', msg
+                
                 if msg[0] == messages.DISPLAY_ERROR:
                     tkMessageBox.showerror("Error", msg[1])
                 elif msg[0] == messages.DISPLAY_INFO:
@@ -160,6 +205,7 @@ class GadoGui(Frame):
                     self._refresh()
         except:
             pass
+        
         self.root.after(100, self.tkloop)
         
     #################################################################################
@@ -256,24 +302,33 @@ class GadoGui(Frame):
         self.messageEntry.grid(row=5, column=0, columnspan=6, sticky=N+S+E+W, padx=10, pady=5)
         
     def _createImageDisplayWidgets(self):
+        '''
+        These widgets display both the scanned and photographed images captured
+        by the Gado system
+        '''
+        
         #Scanner label
         self.scannerLabel = Label(self)
         self.scannerLabel["text"] = "Scanner Image:"
         self.scannerLabel.grid(row=2, column=0, sticky=W, padx=10, pady=5)
         
+        #Webcam Label
         self.webCamLabel = Label(self)
         self.webCamLabel["text"] = "Webcam Image:"
         self.webCamLabel.grid(row=2, column=2, sticky=W, padx=10, pady=5)
         
+        #Open up the default image as a placeholder for the scanned/photographed images
         image = Image.open("resources/test.jpg")
         image.thumbnail((500, 500), Image.ANTIALIAS)
         
         image2 = Image.open("resources/test.jpg")
         image2.thumbnail((500,500), Image.ANTIALIAS)
         
+        #Set to the default
         self.frontImage = ImageTk.PhotoImage(image)
         self.backImage = ImageTk.PhotoImage(image2)
         
+        #Embed photos and display in Gui
         self.frontImageLabel = Label(self, image=self.frontImage)
         self.frontImageLabel.photo = self.frontImage
         self.frontImageLabel.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
@@ -295,10 +350,17 @@ class GadoGui(Frame):
     #################################################################################
     
     def _refresh(self):
+        #Delete allentries in the artifact set list
         self.set_dropdown.delete(0, 'end')
+        
+        #Repopulate that list with the most current entries
         self._populate_set_dropdown()
     
     def _populate_set_dropdown(self):
+        '''
+        Populates the artifact set dropdown with the most current list of artifact sets
+        '''
+        
         add_to_queue(self.q_out, messages.WEIGHTED_ARTIFACT_SET_LIST)
         msg = fetch_from_queue(self.q_in, messages.WEIGHTED_ARTIFACT_SET_LIST)
         self.weighted_sets = msg[1]

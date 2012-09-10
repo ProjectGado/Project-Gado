@@ -44,8 +44,8 @@ int arm_servo_pin = 5;
 
 const String handshake = "Im a robot!";
 
-const String firmware_version = "0.9.2";
-const String hardware_version = "2.5";
+const String firmware_version = "1.0";
+const String hardware_version = "2.1";
 
 void setup() 
 { 

@@ -26,10 +26,18 @@ import ttk
 import sys
 import time
     
+# This thread is responsible for:
+#   - Creating the Gui object (Everything the end user sees/interacts with)
+#   - Passing in both queues to that object (so that the logic and gui threads can talk)
+#   - Actually loading up and initializing the gui
+
 class GuiThread(Thread):
+    
     def __init__(self, q_in, q_out):
+        #Load in queues
         self.q_in = q_in
         self.q_out = q_out
+        
         print "GuiThread\tcreating the gui"
         self.gui = GadoGui(q_in, q_out)
         Thread.__init__(self)
@@ -38,13 +46,22 @@ class GuiThread(Thread):
         print "GuiThread\tloading GUI elements"
         self.gui.load()
         print "GuiThread\tcalling finished tk.mainloop"
-        #self.gui.mainloop()
+        
+        #Once the thread is done loading, exit
         sys.exit()
 
+# This thread is responsible for:
+#   - Creating the Gado System object (Main logic for software)
+#   - Passing in communication queues to that object
+#   - Loading and executing the logic (robot movements/connections and the like)
+
 class LogicThread(Thread):
+    
     def __init__(self, q_in, q_out, recovered=False):
+        #Load in the queues
         self.q_in = q_in
         self.q_out = q_out
+        
         print "LogicThread\tintializing GadoSystem"
         self.gado_sys = GadoSystem(q_in, q_out, recovered)
         print "LogicThread\tcompleted intializing GadoSystem"
@@ -56,36 +73,46 @@ class LogicThread(Thread):
         self.gado_sys.mainloop()
         print "LogicThread\tfinished main loop on gado_sys"
         
+#Main program section
 if __name__ == '__main__':
     print "Initializing Gado Robot Management Interface"
     
+    #Initialize communications queues
     q_gui_to_sys = Queue()
     q_sys_to_gui = Queue()
     
+    #Instantiate both the Gui and Logic threads
     t1 = GuiThread(q_sys_to_gui, q_gui_to_sys)
     t2 = LogicThread(q_gui_to_sys, q_sys_to_gui)
     
+    #Start up both threads independently
     t1.start()
     t2.start()
     
+    #Main program loop
     while True:
+        #Wait for the logic thread to finish running
         t2.join()
         
         print 'main\tThread 2 Joined'
+        
+        #If there is a message waiting from the Gui
         if not q_gui_to_sys.empty():
             msg = fetch_from_queue(q_gui_to_sys)
+            
+            #If that message is to kill the application
             if msg[0] == messages.MAIN_ABANDON_SHIP:
                 sys.exit()
+                
         print 'main\tThread 2 Recovering'
+        
+        #Re-instantiate the logic thread and run it again
         t2 = LogicThread(q_gui_to_sys, q_sys_to_gui, True)
         t2.start()
     
+    #Wait for the Gui thread to finish running
     t1.join()
     print 'main\tThread 1 Joined'
-    sys.exit()
-    #print 'main\tfetching MAIN_ABANDON_SHIP'
-    #msg = fetch_from_queue(q, messages.MAIN_ABANDON_SHIP)
-    #print 'main\tfetched MAIN_ABANDON_SHIP'
-    #exit()
-    # It would be nice to check to see if the LogicThread ate it.
     
+    #Exit out of program
+    sys.exit()
