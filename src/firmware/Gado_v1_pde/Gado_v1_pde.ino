@@ -38,13 +38,13 @@ int photo_sense_pin = 1;
 int actuator_position_pin = 2;
 int arm_servo_pin = 5;
 
-#define buttonPin A1
+#define buttonPin A0
 #define ACTUATOR_START 25
 #define VACUUM_ON 255
 
 const String handshake = "Im a robot!";
 
-const String firmware_version = "1.0";
+const String firmware_version = "1.0.1";
 const String hardware_version = "2.1";
 
 void setup() 
@@ -54,6 +54,8 @@ void setup()
   
   //Move the actuator to the starting position
   analogWrite(actuator_pin, ACTUATOR_START);
+  
+  Serial.println("setup() called");
   
   //Initilalize the arm servo
   pinMode(arm_servo_pin, OUTPUT);
@@ -72,7 +74,7 @@ void setup()
   digitalWrite(pump_in_2, LOW);
   
   //Shut off the pump
-  analogWrite(pump_pwm, 0);  
+  pumpSettings(0);
   
   //Map degrees to whatever the servo uses
   y = map(0, 0, 180, servo_min, servo_max);
@@ -145,7 +147,8 @@ void loop()
 }
 
 void pumpSettings(int v) {
-    if (v > 0) {
+  //Serial.println("pumpSettings called with " + String(v));
+  if (v > 0) {
       digitalWrite(pump_standy, HIGH);
       analogWrite(pump_pwm,v);
     } else {
@@ -219,6 +222,7 @@ void advancedLowerAndLift()
 
 void drop(boolean enableVacuum)
 {
+  //Serial.println("drop called");  
   int v = actuator_pos;
   int last_p = analogRead(actuator_position_pin);
   int curr_p = last_p;
@@ -254,13 +258,14 @@ void drop(boolean enableVacuum)
       // if it's dropped by 3, then we're probably good
       // if it stopped dropping, then we're also probably good
       // (by good, I mean we are go for lowering it further)
-      if((diff >= 3) || (curr_p == last_p))
+      if((curr_p == last_p))
       {
         // drop it one
         v = v + 1;
         
         // did we reach the bottom?
         if (v > 255) {
+          Serial.println("drop reached rock bottom");  
           break; // abandon ship!
         }
         
@@ -279,9 +284,11 @@ void drop(boolean enableVacuum)
     {
       // we want a delay between two positive readings two ensure that they're accurate
       if (enableVacuum) {
-        
+          Serial.println("drop is complete, enabling vacuum");  
+          pumpSettings(VACUUM_ON);
       } else {
-        pumpSettings(VACUUM_ON);
+          Serial.println("drop is complete, not changing the vacuum");  
+//        pumpSettings(0);
       }
       break;
     }
@@ -290,60 +297,11 @@ void drop(boolean enableVacuum)
   }
 }
 
+
+
 void lowerAndLift()
 {
    drop(false) ;
    analogWrite(actuator_pin, ACTUATOR_START);
    actuator_pos = ACTUATOR_START;
 }
-/*
-void lowerAndLift()
-{
-  
-  int v = actuator_pos;
-  int last_actuator_position = analogRead(actuator_position_pin);
-  int current_actuator_position = last_actuator_position;
-  
-  while(1)
-  {
-    int reading = analogRead(buttonPin);
-    
-    if(reading != lastButtonState)
-    {
-      lastDebounceTime = millis();
-    }
-    
-    //if ((millis() - lastDebounceTime) > debounceDelay)
-    //{
-    //buttonState = reading;
-    
-    if (reading == 0)
-    {
-      //get the current reading of the actuator's position
-      current_actuator_position = analogRead(actuator_position_pin);
-      
-      //Serial.println("New act pos: " + v);
-      if(current_actuator_position == last_actuator_position)
-      {
-        v = v + 10;
-        
-        analogWrite(actuator_pin, v);
-        actuator_pos = v;
-      }
-      
-      last_actuator_position = current_actuator_position;
-      
-      delay(50);
-    }
-    else if(reading > 0 && ((millis() - lastDebounceTime) > debounceDelay))
-    {
-      //spin forever
-      Serial.println("STOPPP!");
-      analogWrite(actuator_pin, ACTUATOR_START);
-      actuator_pos = ACTUATOR_START;
-      break;
-    }
-    //}
-    lastButtonState = reading;
-  }
-}*/

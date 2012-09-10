@@ -163,12 +163,17 @@ class Robot(object):
     
     def _sleeptime(self, new_arm_location):
         rotation = abs(new_arm_location - self.current_arm_value)
-        sleep_time = rotation * self.arm_degrees_per_s + self.arm_time_overhead
+        print 'Robot\t_sleeptime\trotation: %s' % rotation
+        sleep_time = rotation / self.arm_degrees_per_s + self.arm_time_overhead
+        print 'Robot\t_sleeptime\tarm_degrees_per_s: %s' % self.arm_degrees_per_s
+        print 'Robot\t_sleeptime\tarm_time_overhead: %s' % self.arm_time_overhead
+        print 'Robot\t_sleeptime\tsleep_time: %s' % self.arm_time_overhead
         return sleep_time
     
     def _move_arm_and_sleep(self, degree):
         sleep_time = self._sleeptime(degree)
         self._moveArm(degree)
+        print 'Robot\tsleep_time %s' % sleep_time
         time.sleep(sleep_time)
     
     #Move the robot's arm to the specified degree (between 0-180)
