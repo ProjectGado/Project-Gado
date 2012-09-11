@@ -129,7 +129,7 @@ class AdvancedSettings():
         self._populateLevelComboBox()
         self.level_selection.selectitem(0)
         
-        self.logLevelEntry = Entry(window_l, name="logging_level")
+        self.logLevelEntry = Entry(window_l, name="log_level")
         
         #e = self.level_selection.get()
         
@@ -200,8 +200,12 @@ class AdvancedSettings():
         s = dict()
         for e in self.entries:
             print "entry: %s" % str(e)
-            s[e._name] = e.get()
-            print "val: %s" % (s[e._name])
+            val = e.get()
+            
+            if len(val) > 0:
+                s[e._name] = val
+                print "saved val: %s and key: %s" % (s[e._name], e._name)
+            #print "val: %s" % (s[e._name])
         export_settings(**s)
         
     def _updateDebugLevel(self, level):
