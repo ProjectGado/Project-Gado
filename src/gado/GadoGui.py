@@ -15,6 +15,7 @@ from threading import Thread
 from Queue import Queue
 from gado.gui.Wizard import Wizard
 from gado.gui.AdvancedSettings import AdvancedSettings
+from gado.Logger import Logger
 
 import datetime
 
@@ -26,6 +27,11 @@ class GuiListener(Thread):
     action for handling the information.
     '''
     def __init__(self, q, gui_q, gui):
+        
+        #Instantiate the logger
+        loggerObj = Logger(self.__class__.__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         self.gui_q = gui_q
         self.q = q
         self.gui = gui
@@ -34,7 +40,10 @@ class GuiListener(Thread):
     def run(self):
         while True:
             msg = fetch_from_queue(self.q)
-            print 'GuiListener\tFetched message %s' % str(msg)
+            
+            if msg[1] is not None:
+                self.logger.debug('GuiListener\tFetched message %s' % str(msg))
+            
             if msg[0] == messages.SET_SCANNER_PICTURE:
                 self.gui.changeScannedImage(msg[1])
             elif msg[0] == messages.SET_WEBCAM_PICTURE:
@@ -59,6 +68,11 @@ class GadoGui(Frame):
     '''
     
     def __init__(self, q_in, q_out):
+        
+        #Instantiate the logger
+        loggerObj = Logger(self.__class__.__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         # Load in the system-to-gui queue and the gui-to-system queue
         self.q_in = q_in
         self.q_out = q_out
@@ -185,7 +199,7 @@ class GadoGui(Frame):
         try:
             while True:
                 msg = self.gui_q.get_nowait()
-                print 'GadoGui\tmsg:', msg
+                self.logger.debug('GadoGui\tmsg:', msg)
                 
                 if msg[0] == messages.DISPLAY_ERROR:
                     tkMessageBox.showerror("Error", msg[1])
@@ -261,6 +275,7 @@ class GadoGui(Frame):
         self.selected_set = self.weighted_sets[int(idx)][0]
         if not self.selected_set:
             tkMessageBox.showerror("Invalid Set Selection", "Please select a valid set, or create a new one.")
+            self.logger.error("Invalid Artifact Set Selection")
         else:
             add_to_queue(self.q_out, messages.SET_SELECTED_ARTIFACT_SET, self.selected_set)
     
@@ -398,7 +413,7 @@ class GadoGui(Frame):
             self.frontImageLabel.grid(row=3, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
             
         except:
-            print "Error updating scanner image in gui thread..."
+            self.logger.exception("Error updating scanner image in gui thread...")
         
     def changeWebcamImage(self, imagePath):
         try:
@@ -411,4 +426,4 @@ class GadoGui(Frame):
             self.backImageLabel.photo = self.backImage
             self.backImageLabel.grid(row=3, column=2, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         except:
-            print "Error updating webcam image in gui thread..."
+            self.logger.exception("Error updating webcam image in gui thread...")
