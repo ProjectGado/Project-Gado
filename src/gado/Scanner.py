@@ -1,6 +1,7 @@
 from __future__ import division
 import win32com.client
 import os, sys, pythoncom
+from gado.Logger import Logger
 
 #Constants
 
@@ -23,6 +24,10 @@ class Scanner():
         
         pythoncom.CoInitialize()
         
+        #Instantiate the logger
+        loggerObj = Logger(__name__)
+        self.logger = loggerObj.getLoggerInstance()
+        
         #Init all of the scanner objects
         self.deviceManager = win32com.client.Dispatch(DEVICE_MANAGER)
         self.wiaObject = win32com.client.Dispatch(COMMON_DIALOG)
@@ -36,7 +41,7 @@ class Scanner():
             self.scanDpi = kwargs['scanner_dpi']
             self.scannerName = kwargs['scanner_name']
         except:
-            print "Scanner\tError while instantiating scanner with passed settings...\nScanner\tError: %s" % (sys.exc_info()[0])
+            self.logger.exception("Scanner\tError while instantiating scanner with passed settings...\nScanner\tError: %s" % (sys.exc_info()[0]))
        
     #Take the last image scanned on the scanner and transfer it to the local computer
     #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)
@@ -44,7 +49,9 @@ class Scanner():
         
         if overwrite:
             try: os.remove(imageName) # try deleting it
-            except: pass # file didn't exist. oh well.
+            except:
+                self.logger.exception("Exception scanning image")
+                pass # file didn't exist. oh well.
         
         #If the DPI hasn't yet been set, then set it
         if self.scanDpi is None:
@@ -61,7 +68,7 @@ class Scanner():
                 
             return True
         except:
-            print "Scanner\tError while transferring image from scanner to computer...\nScanner\tError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1])
+            self.logger.exception("Scanner\tError while transferring image from scanner to computer...\nScanner\tError: %s\n%s" % (sys.exc_info()[0], sys.exc_info()[1]))
     
         return False
     
@@ -85,7 +92,7 @@ class Scanner():
                         
                         return True
         else:
-            print "Scanner\tNo device manager?!"
+            self.logger.critical("Scanner\tNo device manager?!")
         return False
     
     def connected(self):
@@ -99,13 +106,13 @@ class Scanner():
         
         try:
             self.device = self.wiaObject.ShowSelectDevice()
-            print "Scanner\tHAVE DEVICE: %s" % (self.device)
-            print 'Scanner\tsetting scan dpi %s' % self.scanDpi
+            self.logger.debug("Scanner\tHAVE DEVICE: %s" % (self.device))
+            self.logger.debug('Scanner\tsetting scan dpi %s' % self.scanDpi)
             #self.setDPI(self.scanDpi)
             
             return True
         
         except:
-            print "Scanner\tFailed to select a device, you should make sure everything is connected...\nScanner\tError: %s" % (sys.exc_info()[0])
+            self.logger.exception("Scanner\tFailed to select a device, you should make sure everything is connected...\nScanner\tError: %s" % (sys.exc_info()[0]))
             
             return False
