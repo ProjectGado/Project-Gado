@@ -38,10 +38,10 @@ class Scanner():
         
         #Try and push the settings from the conf file
         try:
-            self.scanDpi = kwargs['scanner_dpi']
+            self.scanDpi = kwargs['image_back_dpi']
             self.scannerName = kwargs['scanner_name']
         except:
-            self.logger.exception("Scanner\tError while instantiating scanner with passed settings...\nScanner\tError: %s" % (sys.exc_info()[0]))
+            self.logger.exception("Error while instantiating scanner with passed settings...\nScanner\tError: %s" % (sys.exc_info()[0]))
        
     #Take the last image scanned on the scanner and transfer it to the local computer
     #Save it as imageName in the specified dir (specify the file format as well, eg. png, jpg, bmp)

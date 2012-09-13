@@ -47,14 +47,14 @@ class GuiThread(Thread):
         self.q_in = q_in
         self.q_out = q_out
         
-        self.logger.info("GuiThread\tcreating the gui")
+        self.logger.info("creating the gui")
         self.gui = GadoGui(q_in, q_out)
         Thread.__init__(self)
         
     def run(self):
-        self.logger.info("GuiThread\tloading GUI elements")
+        self.logger.info("loading GUI elements")
         self.gui.load()
-        self.logger.debug("GuiThread\tcalling finished tk.mainloop")
+        self.logger.debug("calling finished tk.mainloop")
         
         #Once the thread is done loading, exit
         sys.exit()
@@ -75,20 +75,20 @@ class LogicThread(Thread):
         self.q_in = q_in
         self.q_out = q_out
         
-        self.logger.info("LogicThread\tintializing GadoSystem")
+        self.logger.info("intializing GadoSystem")
         
         self.gado_sys = GadoSystem(q_in, q_out, recovered)
-        self.logger.debug("LogicThread\tcompleted intializing GadoSystem")
+        self.logger.debug("completed intializing GadoSystem")
         
         Thread.__init__(self)
     
     def run(self):
-        self.logger.info("LogicThread\tcalling main loop on gado_sys")
+        self.logger.info("calling main loop on gado_sys")
         
         self.gado_sys.load()
         self.gado_sys.mainloop()
         
-        self.logger.debug("LogicThread\tfinished main loop on gado_sys")
+        self.logger.debug("finished main loop on gado_sys")
         
         
 #Main program section
@@ -117,7 +117,7 @@ if __name__ == '__main__':
         #Wait for the logic thread to finish running
         t2.join()
         
-        logger.debug('main\tThread 2 Joined')
+        logger.debug('Thread 2 Joined')
         
         #If there is a message waiting from the Gui
         if not q_gui_to_sys.empty():
@@ -127,7 +127,7 @@ if __name__ == '__main__':
             if msg[0] == messages.MAIN_ABANDON_SHIP:
                 sys.exit()
                 
-        logger.debug('main\tThread 2 Recovering')
+        logger.debug('Thread 2 Recovering')
         
         #Re-instantiate the logic thread and run it again
         t2 = LogicThread(q_gui_to_sys, q_sys_to_gui, True)
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     
     #Wait for the Gui thread to finish running
     t1.join()
-    logger.debug('main\tThread 1 Joined')
+    logger.debug('Thread 1 Joined')
     
     #Exit out of program
     sys.exit()

@@ -11,7 +11,7 @@ def default_settings():
     settings['image_back_delim']    = ''
     settings['image_front_concat']  = 1 # other option is 0 for false
     settings['image_back_concat']   = 1 # other option is 0 for false
-    settings['scanner_dpi']         = 600
+    settings['image_back_dpi']      = 600
     settings['image_front_filetype']= 'tiff'
     settings['image_back_filetype'] = 'jpg'
     settings['image_front_fn']      = 'set_incrementer' # other option is id

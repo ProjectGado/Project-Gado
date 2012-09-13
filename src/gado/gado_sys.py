@@ -59,15 +59,19 @@ class GadoSystem():
             #the configuration wizard so that the user can enter their
             #personal settings
             add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
+            
+            print 'gado_sys\tasked to launch the wizard'
         
         #Even if we do have a gado.conf file, the wizard has never been run
         #so it needs to get launched for the user's personal preferences
         elif 'wizard_run' in self.s and int(self.s['wizard_run']) == 0:
             add_to_queue(self.q_out, messages.LAUNCH_WIZARD)
+            print 'gado_sys\tasked to launch the wizard2'
         
         #If this is the first time the logic thread has been run,
         #tell the gui thread that the system is ready for interactions
         else:
+            print 'gado_sys\tnot asked for a wizard'
             if not recovered: add_to_queue(self.q_out, messages.READY)
         
         #Get an instance of the database and the database interface
@@ -174,7 +178,7 @@ class GadoSystem():
                 elif msg[0] == messages.ROBOT_CONNECT:
                     expecting_return = messages.ROBOT_CONNECT
                     success = self.connect()
-                    self.logger.info('gado_sys\tROBOT_CONNECT: %s' % success)
+                    self.logger.info('ROBOT_CONNECT: %s' % success)
                     add_to_queue(q, messages.ROBOT_CONNECT, robot.connected())
                 
                 #Delete the current scanner object (if it exists)
@@ -190,11 +194,14 @@ class GadoSystem():
                     self.scanner = Scanner(**import_settings())
                     add_to_queue(q, messages.SCANNER_CONNECT, self.scanner.connected())
                 
+                elif msg[0] == messages.SCANNER_CONNECTED:
+                    add_to_queue(q, messages.SCANNER_CONNECTED, self.scanner.connected())
+                    
                 #Scan an inmage using the scanner
                 elif msg[0] == messages.SCANNER_PICTURE:
                     expecting_return = messages.SCANNER_PICTURE
-                    self.scanner.scanImage(DEFAULT_SCANNED_IMAGE)
-                    add_to_queue(q, messages.SCANNER_PICTURE, DEFAULT_SCANNED_IMAGE)
+                    self.scanner.scanImage(self.s['scanned_image'])
+                    add_to_queue(q, messages.SCANNER_PICTURE, self.s['scanned_image'])
 
                 #Set the passed in artifact set as the currently selected
                 elif msg[0] == messages.SET_SELECTED_ARTIFACT_SET:
@@ -206,24 +213,24 @@ class GadoSystem():
                 
                 #Grabs a list of available webcams and returns them to the Gui thread
                 elif msg[0] == messages.WEBCAM_LISTING:
-                    self.logger.debug('gado_sys\tWEBCAM_LISTING')
+                    self.logger.debug('WEBCAM_LISTING')
                     expecting_return = messages.WEBCAM_LISTING
                     
                     opts = self.camera.options()
-                    self.logger.debug('gado_sys\tWEBCAM_LISTING - %s' % opts)
+                    self.logger.debug('WEBCAM_LISTING - %s' % opts)
                     add_to_queue(q, messages.WEBCAM_LISTING, opts)
                 
                 #Attempt to connect to the selected webcam
                 elif msg[0] == messages.WEBCAM_CONNECT:
-                    self.logger.debug('gado_sys\tWEBCAM_CONNECT switch made it')
+                    self.logger.debug('WEBCAM_CONNECT switch made it')
                     expecting_return = messages.WEBCAM_CONNECT
                     
                     #If the webcam object exists
                     if self.camera:
-                        self.logger.info('gado_sys\tCamera already exists')
+                        self.logger.info('Camera already exists')
                         #And it is connected
                         if self.camera.connected():
-                            self.logger.info('gado_sys\tAlready connected to the webcam')
+                            self.logger.info('Already connected to the webcam')
                             
                             #Relay that information back to the Gui thread
                             add_to_queue(q, messages.WEBCAM_CONNECT, self.camera.connected())
@@ -232,21 +239,24 @@ class GadoSystem():
                         else: self.camera.disconnect()
                         
                     #Reinstantiate the webcam object with the user settings
-                    self.camera = Webcam(**self.s)
+                    self.camera = Webcam(**import_settings())
                     
                     #Connect to webcam and let the Gui thread know if it was sucessfull
-                    self.logger.info('gado_sys\tself.camera.connected() %s' % self.camera.connected())
+                    self.logger.info('self.camera.connected() %s' % self.camera.connected())
                     add_to_queue(q, messages.WEBCAM_CONNECT, self.camera.connected())
-
+                
+                elif msg[0] == messages.WEBCAM_CONNECTED:
+                    add_to_queue(q, messages.WEBCAM_CONNECTED, self.camera.connected())
+                    
                 #Take a picture using the currently connected webcam
                 elif msg[0] == messages.WEBCAM_PICTURE:
                     expecting_return = messages.WEBCAM_PICTURE
                     
                     #Save the picture as the temp image name
-                    self.camera.savePicture(self.s['temp_webcam_image'])
+                    self.camera.savePicture(self.s['webcam_image'])
                     
                     #Pass that name back to the Gui thread
-                    add_to_queue(q, messages.WEBCAM_PICTURE, self.s['temp_webcam_image'])
+                    add_to_queue(q, messages.WEBCAM_PICTURE, self.s['webcam_image'])
                     
                 #Grab a list of artifact sets, with weights so we can figure out the most
                 #recently used
@@ -276,7 +286,7 @@ class GadoSystem():
             #Tell it things went poorly
             except:
                 self.logger.exception("EXCEPTION GENERATED")
-                raise
+                #raise
                 if expecting_return:
                     add_to_queue(q, expecting_return)
     
@@ -292,7 +302,7 @@ class GadoSystem():
         If all the tests pass, then the system is ready to proceed with the scanning process
         '''
         
-        self.logger.debug('gado_sys\tin sanity checks')
+        self.logger.debug('in sanity checks')
         
         #If the scanning process has started, and a user attempts to start it again
         #Tell the gui to display a message stating that
@@ -306,7 +316,7 @@ class GadoSystem():
         
         #User did not select an artifact set from the dropdown
         if not self.selected_set:
-            self.logger.error('gado_sys\tfailed sanity check on selected_set')
+            self.logger.error('failed sanity check on selected_set')
             add_to_queue(self.q_out, messages.DISPLAY_ERROR,
                 'Please select an artifact set from the dropdown.')
             self.started = False
@@ -314,14 +324,14 @@ class GadoSystem():
         
         #Robot is not currently connected
         if not self.robot.connected():
-            self.logger.error('gado_sys\tfailed sanity check on robot.connected()')
+            self.logger.error('failed sanity check on robot.connected()')
             
             #Try and connect
             self.connect()
             
             #If that failed, let the Gui know so it can tell the user
             if not self.robot.connected():
-                self.logger.error("gado_sys\tCOMPLETELY FAILED ON robot.connected()")
+                self.logger.error("COMPLETELY FAILED ON robot.connected()")
                 add_to_queue(self.q_out, messages.DISPLAY_ERROR,
                     'Unable to connect to the robot. Try pressing the reset button and then unplugging it and replugging it.')
                 self.started = False
@@ -335,7 +345,7 @@ class GadoSystem():
         
         #If the scanner is not currently connected
         if not self.scanner.connected():
-            self.logger.error('gado_sys\tfailed sanity check on scanner.connected(), retrying')
+            self.logger.error('failed sanity check on scanner.connected(), retrying')
             
             #Delete the scanner object (if any)
             try: del self.scanner
@@ -348,7 +358,7 @@ class GadoSystem():
             
             #If the scanner is still not connected to the system
             if not self.scanner.connected():
-                self.logger.error('gado_sys\tfailed sanity check on scanner.connected()')
+                self.logger.error('failed sanity check on scanner.connected()')
                 
                 #Let the Gui thread know that the scanner could not be found
                 self.started = False
@@ -367,7 +377,7 @@ class GadoSystem():
             
             #If that fails
             if not self.camera.connected():
-                self.logger.error('gado_sys\tfailed sanity check on camera.connected()')
+                self.logger.error('failed sanity check on camera.connected()')
                 
                 #Let the Gui thread know that it is not connected so it can alert the user
                 add_to_queue(self.q_out, messages.DISPLAY_ERROR,
@@ -449,16 +459,14 @@ class GadoSystem():
         #The actual looping should be happening here, instead of in Robot.py
         #Robot.py should just run the loop once and all conditions/vars will be stored here
 
-        self.logger.debug("gado_sys\tchecking for messages")
+        self.logger.debug("checking for messages")
         self._checkMessages()
-        self.logger.info('gado_sys\tattempting to save picture')
+        self.logger.info('attempting to save picture')
         
         # Sometimes it gets left behind, get rid of it
-        t_webcam_image = '%s.%s' % (self.s['temp_webcam_image'],
-                self.s['image_back_filetype'].strip('.'))
+        t_webcam_image = self.s['webcam_image']
         
-        t_scanner_image = '%s.%s' % (self.s['temp_scanned_image'],
-                self.s['image_front_filetype'].strip('.'))
+        t_scanner_image = self.s['scanned_image']
         
         try: os.remove(t_webcam_image)
         except:
@@ -469,7 +477,7 @@ class GadoSystem():
         self.camera.savePicture(t_webcam_image)
         self._checkMessages()
         
-        self.logger.info("gado_sys\tattempting to check for barcode")
+        self.logger.info("attempting to check for barcode")
         
         #Check to see if we have reached the end of the input pile
         completed = check_for_barcode(t_webcam_image, '')
@@ -477,7 +485,7 @@ class GadoSystem():
         #While we still have artifacts in the in pile that need to be digitized
         while not completed:
             # New Artifact!
-            self.logger.info("gado_sys\tattempting to add an artifact")
+            self.logger.info("attempting to add an artifact")
             completed = self._checkMessages() & completed
             
             #Create a new artifact within the currently selected set
@@ -487,7 +495,7 @@ class GadoSystem():
             front_fn = artifact_info['front_path']
             back_fn = artifact_info['back_path']
             
-            self.logger.debug('gado_sys\trenaming webcam image to %s' % back_fn)
+            self.logger.debug('renaming webcam image to %s' % back_fn)
             
             #Move the temp webcam image to it's permanent location
             move(t_webcam_image, back_fn)
@@ -495,13 +503,13 @@ class GadoSystem():
             #Pass the webcam's captured image back to the Gui thread so that it can be displayed
             add_to_queue(self.q_out, messages.SET_WEBCAM_PICTURE, back_fn)
             
-            self.logger.info("gado_sys\tattempting to go pick up an object")
+            self.logger.info("attempting to go pick up an object")
             completed = self._checkMessages() & completed
             
             #Pick up a single artifact from the in pile
             self.robot.pickUpObject()
             
-            self.logger.info("gado_sys\tattempting to move object to scanner")
+            self.logger.info("attempting to move object to scanner")
             completed = self._checkMessages() & completed
             
             #Using the scanner, capture an image of that artifact
@@ -518,7 +526,7 @@ class GadoSystem():
             #Do the actual scanning of the artifact
             self.scanner.scanImage(t_scanner_image)
             
-            self.logger.debug('gado_sys\trenaming scanned images to %s' % front_fn)
+            self.logger.debug('renaming scanned images to %s' % front_fn)
             
             #Move scanned image to its permament location
             move(t_scanner_image, front_fn)

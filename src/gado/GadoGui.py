@@ -59,6 +59,9 @@ class GuiListener(Thread):
                 sys.exit()
             elif msg[0] == messages.GUI_LISTENER_DIE:
                 return
+            elif msg[0] == messages.LAUNCH_WIZARD:
+                print 'GadoGui\tasked to launch wizard, telling the gui'
+                add_to_queue(self.gui_q, messages.LAUNCH_WIZARD)
             else:
                 add_to_queue(self.q, msg[0], (msg[1] if len(msg) > 1 else None))
 
@@ -114,7 +117,7 @@ class GadoGui(Frame):
         self.pack()
         self.createWidgets()
         
-        msg = fetch_from_queue(self.q_in)
+        #msg = fetch_from_queue(self.q_in)
         self.tkloop()
         
         #Start up the Gui Listener
@@ -199,13 +202,14 @@ class GadoGui(Frame):
         try:
             while True:
                 msg = self.gui_q.get_nowait()
-                self.logger.debug('GadoGui\tmsg:', msg)
+                self.logger.debug('msg: ' + str(msg))
                 
                 if msg[0] == messages.DISPLAY_ERROR:
                     tkMessageBox.showerror("Error", msg[1])
                 elif msg[0] == messages.DISPLAY_INFO:
                     tkMessageBox.showinfo("Info", msg[1])
                 elif msg[0] == messages.LAUNCH_WIZARD:
+                    print 'GadoGui\t asked to launch wizard'
                     add_to_queue(self.q_in, messages.GUI_LISTENER_DIE)
                     self.wizard.load()
                 elif msg[0] == messages.RELAUNCH_LISTENER:

@@ -37,37 +37,6 @@ class WizardQueueListener(Thread):
         msg = fetch_from_queue(self.q_in, self.message)
         self.logger.debug('WizardQueue\tfetched %s to queue' % self.message)
         self.callback(msg)
-        
-class ImageSampleViewer(Frame):
-    def __init__(self, root, path):
-        
-        #Instantiate the logger
-        loggerObj = Logger(self.__class__.__name__)
-        self.logger = loggerObj.getLoggerInstance()
-        
-        self.path = path
-        self.root = root
-        Frame.__init__(self, self.root)
-                
-        self.logger.debug('ImageSampleViewer\tOpening image')
-        image = Image.open(path)
-        self.logger.debug('ImageSampleViewer\tResizing image')
-        image.thumbnail((500, 500), Image.ANTIALIAS)
-        
-        self.logger.debug('ImageSampleViewer\tPhotoImage(image)')
-        image_tk = ImageTk.PhotoImage(image)
-        self.logger.debug('ImageSampleViewer\tCreating the image\'s label')
-        image_label = Label(self, image=image_tk)
-        self.logger.debug('ImageSampleViewer\tAssiging image_tk to .photo')
-        image_label.photo = image_tk
-        self.logger.debug('ImageSampleViewer\tAdding the label to the grid')
-        image_label.grid(row=0, column = 0, sticky=N+S+E+W, padx=10, pady=5)
-        
-        self.logger.debug('ImageSampleViewer\tSetting up window closing protocol')
-        window.protocol("WM_DELETE_WINDOW", self.window.withdraw)
-        self.logger.debug('ImageSampleViewer\tWithdrawing the window')
-        window.withdraw()
-        self.logger.debug('ImageSampleViewer\t__init__ completed')
     
 
 IN_PILE = 'Documents to be Scanned Pile'
@@ -87,6 +56,8 @@ class Wizard():
         self.q_out = q_out # goes to gado_sys
         self.q_gui = q_gui # goes to GadoGui
         self.root = root
+        
+        self.webcam_name = None
         
         self._last_time = time.time()
         
@@ -115,13 +86,14 @@ class Wizard():
         frameList.append(frame)
         nextButtons.append(next_btn)
         
+        frame, next_btn = self._frame_welcome()
+        frameList.append(frame)
+        nextButtons.append(next_btn)
+        
         frame, next_btn = self._frame_rotation()
         frameList.append(frame)
         nextButtons.append(next_btn)
         
-        frame, next_btn = self._frame_welcome()
-        frameList.append(frame)
-        nextButtons.append(next_btn)
         #'''
         frame, next_btn = self._frame_location(IN_PILE)
         frameList.append(frame)
@@ -171,12 +143,14 @@ class Wizard():
         window.withdraw()
     
     def show(self):
+        print 'wizard\twindow.deiconify()'
         self.window.deiconify()
         
     def _set_webcam(self, a):
         idx = self.webcam_dropdown.curselection()[0]
         name = self.webcams[int(idx)][1]
         export_settings(webcam_name=name)
+        self.webcam_name = name
         self.logger.debug('Wizard\tI just saved the webcam_name as %s' % name)
     
     def webcam_options(self, msg):
@@ -232,12 +206,15 @@ class Wizard():
     
     def _frame_rotation(self):
         label = 'Robot Placement'
-        text = '\n\nWe hope you were able to set up the robot without too\
-               much trouble, and now we want to help you set it up in it\
-               new home. First, the robot\'s arm has a limited range of\
-               motion. On this screen we\'re going to rotate it through the\
-               full range and you\'ll need to make sure that it can reach\
-               everything.'
+        text = 'We hope you were able to set up the robot without too \
+much trouble, and now we want to help you set it up in it \
+new home. First, the robot\'s arm has a limited range of \
+motion. In the next few screens we\'re going to ask you where \
+the scanner is, where images you want to scan are located, and \
+where the robot should drop the images. You can use your \
+keyboard to control the robot\'s arm through this process. \
+Once everything is lined up, finish the instructions by \
+attaching the robot to your surface.'.replace('\n', '')
         frame = self.emptyFrame(label, text, text_height=TEXT_HEIGHT - 2)
         
         nextButton = self.nextButton(frame)
@@ -297,6 +274,7 @@ class Wizard():
         if 'scanner' in p_type.lower():
             funct = self.connectToScanner
             funct_2 = self.displayScannerSample
+            connected_message = messages.SCANNER_CONNECTED
         elif 'webcam' in p_type.lower():
             funct = self.connectToWebcam
             funct_2 = self.displayWebcamSample
@@ -305,6 +283,14 @@ class Wizard():
             webcams.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=1)
             self.webcam_dropdown = webcams
             
+            connected_message = messages.WEBCAM_CONNECTED
+        
+        # Ask the system if we're already connected
+        # System returns a boolean
+        # If we're already connected, then the next button should be enabled
+        add_to_queue(self.q_out, connected_message)
+        msg = fetch_from_queue(self.q_in, connected_message)
+        enable_next = msg[1]
         
         connect = Button(frame, text = "Locate %s" % (p_type.capitalize()),
                          command = funct)
@@ -316,10 +302,14 @@ class Wizard():
         
         nextButton = self.nextButton(frame)
         prevButton = self.prevButton(frame)
+        skipButton = self.skipButton(frame)
         
-        nextButton.config(state=DISABLED)
+        # If we should not enable next, then disable it
+        if not enable_next:
+            nextButton.config(state=DISABLED)
         
-        nextButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        nextButton.grid(column = 2, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
+        skipButton.grid(column = 1, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
         prevButton.grid(column = 0, row = 3, padx = 10, pady = 5, sticky = N+S+E+W)
         
         return (frame, nextButton)
@@ -328,6 +318,8 @@ class Wizard():
         label = 'Configure the Robot'
         if location == SCANNER_HEIGHT:
             text = '\n\nUsing the up and down arrow keys, please place the suction cup on the scanner. We recommend placing a piece of paper on top of the scanner as you lower the suction cup.'
+        elif location == SCANNER_CLEAR:
+            text = '\n\nUsing the up and down arrow keys, please lift the suction cup up enough that it will clear the edge of the scanner by about two inches.'
         else:
             text = '\n\nUsing the right and left arrow keys, please move the robot\'s arm over the %s' % location
         frame = self.emptyFrame(label, text)
@@ -366,6 +358,7 @@ class Wizard():
         name_textbox = Entry(frame)
         name_textbox.grid(row=1, column=0, sticky=N+S+E+W, padx=10, pady=5, columnspan=2)
         self.name_textbox = name_textbox
+        name_textbox.insert(0, import_settings().get('image_path'))
         name_textbox.config(state=DISABLED)
         
         button = Button(frame, text = "Browse", command = self.loadtemplate, width = 10)
@@ -382,15 +375,17 @@ class Wizard():
         return (frame, nextButton)
     
     def loadtemplate(self):
+        initial_dir = import_settings().get('image_path')
         dirname = tkFileDialog.askdirectory(parent=self.root,
-                                            initialdir=".",
+                                            initialdir=initial_dir,
                                             title='Please select a directory')
-        self.logger.debug('Wizard\tGot a directory name!')
-        self.name_textbox.config(state=NORMAL)
-        self.name_textbox.delete(0, 'end')
-        self.name_textbox.insert('end', dirname)
-        self.name_textbox.config(state=DISABLED)
-        export_settings(image_path=dirname)
+        if dirname:
+            self.logger.debug('Got a directory name!')
+            self.name_textbox.config(state=NORMAL)
+            self.name_textbox.delete(0, 'end')
+            self.name_textbox.insert('end', dirname)
+            self.name_textbox.config(state=DISABLED)
+            export_settings(image_path=dirname)
     
     def skipFrame(self):
         # In the future, maybe it would be good log
@@ -496,14 +491,17 @@ class Wizard():
     def connectToScanner(self):
         t = WizardQueueListener(self.q_in, self.q_out, messages.SCANNER_CONNECT, None, self.connectedCallback)
         t.start()
+        time.sleep(0.1)
     
     def displayScannerSample(self):
         t = WizardQueueListener(self.q_in, self.q_out, messages.SCANNER_PICTURE, None, self.displayCallbackScanner)
         t.start()
+        time.sleep(0.1)
     
     def displayWebcamSample(self):
         t = WizardQueueListener(self.q_in, self.q_out, messages.WEBCAM_PICTURE, None, self.displayCallbackWebcam)
         t.start()
+        time.sleep(0.1)
     
     def displayCallbackWebcam(self, msg):
         #print 'Wizard\tCalling ImageSampleViewer with self.window and msg[1] "%s"' % msg[1]
@@ -520,8 +518,10 @@ class Wizard():
         add_to_queue(self.q_gui, messages.SET_SCANNER_PICTURE, msg[1])
     
     def connectToWebcam(self):
-        t = WizardQueueListener(self.q_in, self.q_out, messages.WEBCAM_CONNECT, None, self.connectedCallback)
+        print 'Wizard\tconnectToWebcam() called'
+        t = WizardQueueListener(self.q_in, self.q_out, messages.WEBCAM_CONNECT, self.webcam_name, self.connectedCallback)
         t.start()
+        time.sleep(0.1)
     
     def connectedCallback(self, msg):
         if msg[0] == messages.WEBCAM_CONNECT or msg[0] == messages.SCANNER_CONNECT:
