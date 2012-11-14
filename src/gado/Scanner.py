@@ -108,7 +108,7 @@ class Scanner():
             self.device = self.wiaObject.ShowSelectDevice()
             self.logger.debug("Scanner\tHAVE DEVICE: %s" % (self.device))
             self.logger.debug('Scanner\tsetting scan dpi %s' % self.scanDpi)
-            #self.setDPI(self.scanDpi)
+            self.setDPI(self.scanDpi)
             
             return True
         
@@ -116,3 +116,67 @@ class Scanner():
             self.logger.exception("Scanner\tFailed to select a device, you should make sure everything is connected...\nScanner\tError: %s" % (sys.exc_info()[0]))
             
             return False
+        
+    #Pass in a dpi value to explicitly set the scanner to
+    #This value is also saved in the gado.conf file for future use
+    def setDPI(self, dpiValue):
+        
+        try:
+            #Find each item for the connected device
+            for item in self.device.Items:
+                
+                #Find each property for each item
+                for prop in item.Properties:
+                    
+                    #Change both the horizontal and vertical dpi
+                    if prop.Name == WIA_HORIZONTAL_RESOLUTION or prop.Name == WIA_VERTICAL_RESOLUTION:
+                        
+                        #Changing dpi settings, see if we have a valid dpi property
+                        if self.scanDpi is not None:
+                            prop.Value = self.scanDpi
+                            
+                        else:
+                            #Setting to default, 600 DPI
+                            prop.Value = DEFAULT_DPI
+                            
+                    #Change the horizontal and vertical extents (size) so we get the entire surface
+                    #of the scanner scanned instead of just a portion
+                    if prop.Name == WIA_HORIZONTAL_EXTENT:
+                        
+                        horBedSize = self._getHorizontalBedSize()
+                        
+                        horizontalExtent = int((horBedSize / SCALE_FACTOR) * float(dpiValue))
+                        
+                        prop.Value = horizontalExtent
+                        
+                    if prop.Name == WIA_VERTICAL_EXTENT:
+                        
+                        vertBedSize = self._getVerticalBedSize()
+                        
+                        verticalExtent = int((vertBedSize / SCALE_FACTOR) * float(dpiValue))
+                        
+                        prop.Value = verticalExtent
+        except:
+            print "Error trying to set dpi to value: %s...\nError: %s" % (dpiValue, sys.exc_info()[0])
+            
+    #Get the horizontal bed size (Used to calculate extents regarding setting custom DPIs)
+    def _getHorizontalBedSize(self):
+        
+        if self.device is not None:
+            
+            for prop in self.device.Properties:
+                if prop.Name == WIA_HORIZONTAL_BED_SIZE:
+                    return prop.Value
+                
+        return -1
+    
+    #Get the vertical bed size (Used to calculate extents regarding setting custom DPIs)
+    def _getVerticalBedSize(self):
+        
+        if self.device is not None:
+            
+            for prop in self.device.Properties:
+                if prop.Name == WIA_VERTICAL_BED_SIZE:
+                    return prop.Value
+                
+        return -1
