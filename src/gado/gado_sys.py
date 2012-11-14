@@ -515,12 +515,14 @@ class GadoSystem():
             
             #Pick up a single artifact from the in pile
             self.robot.pickUpObject()
+            time.sleep(5)
             
             self.logger.info("attempting to move object to scanner")
             completed = self._checkMessages() & completed
             
             #Using the scanner, capture an image of that artifact
             self.robot.scanObject()
+            self.robot._vacuumOn(False)
             
             completed = self._checkMessages() & completed
             
