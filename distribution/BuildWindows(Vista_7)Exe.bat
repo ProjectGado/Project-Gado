@@ -27,6 +27,11 @@ python BuildGado(Vista_7)Exe.py py2exe
 copy ..\src\resources\test.jpg windows_(Vista_7)_gado\resources
 copy ..\src\resources\gado.ico windows_(Vista_7)_gado\resources
 
+copy ..\src\resources\helvB08.pil windows_(Vista_7)_gado
+copy ..\src\resources\helvB08.png windows_(Vista_7)_gado
+copy ..\src\resources\helvetica-10.pil windows_(Vista_7)_gado
+copy ..\src\resources\helvetica-10.png windows_(Vista_7)_gado
+
 ::Delete the build folders, it only clutters things
 rmdir /s /q build
 rmdir /s /q gado

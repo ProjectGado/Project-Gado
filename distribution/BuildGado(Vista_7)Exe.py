@@ -36,7 +36,7 @@ data_files = []
 includes = ['sys', 'time', 'Tkinter', 'Pmw', 'tkMessageBox', 'ttk',
             'platform', 'threading', 'json', 'os', 're',
             'subprocess', '_winreg', 'serial', 'Queue', 'itertools',
-            'Tkconstants']
+            'Tkconstants', 'PIL']
 excludes = ['_gtkagg', '_tkagg', 'bsddb', 'curses', 'email', 'pywin.debugger',
             'pywin.debugger.dbgcon', 'pywin.dialogs', 'tcl',
             'Tkconstants', 'Tkinter']

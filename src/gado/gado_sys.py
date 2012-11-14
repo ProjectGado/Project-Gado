@@ -464,9 +464,16 @@ class GadoSystem():
         self.logger.info('attempting to save picture')
         
         # Sometimes it gets left behind, get rid of it
-        t_webcam_image = self.s['webcam_image']
-        
-        t_scanner_image = self.s['scanned_image']
+        try:
+            t_webcam_image = self.s['webcam_image']
+        except:
+            self.logger.exception("Exception while starting the robot")
+            pass
+        try:
+            t_scanner_image = self.s['scanned_image']
+        except:
+            self.logger.exception("Exception while starting the robot")
+            pass
         
         try: os.remove(t_webcam_image)
         except:
