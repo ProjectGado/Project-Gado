@@ -297,10 +297,9 @@ class Robot(object):
         #self._vacuumOn(True)
         #self._moveActuator(self.actuator_up_value)
         #time.sleep(5)
-		
-		# try to shake the arm a little bit before lifting
-		self._moveArm(self.arm_home_value + 10)
-		time.sleep(0.2)
+        # try to shake the arm a little bit before lifting
+        self._moveArm(self.arm_home_value + 10)
+        time.sleep(0.2)
         self.lift()
         time.sleep(5)
         
