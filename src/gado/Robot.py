@@ -280,7 +280,7 @@ class Robot(object):
             try:
                 current_height = json.loads(resp)['actuator_pos_s']
                 if current_height == last_height:
-                    return
+                    break
                 last_height = current_height
             except:
                 self.logger.exception('Exception while scanning artifact')
@@ -298,6 +298,8 @@ class Robot(object):
         #self._moveActuator(self.actuator_up_value)
         #time.sleep(5)
         self.lift()
+        time.sleep(5)
+        
         self.logger.debug('Robot\tmoving to out pile')
         self._move_arm_and_sleep(self.arm_out_value)
         

@@ -464,9 +464,16 @@ class GadoSystem():
         self.logger.info('attempting to save picture')
         
         # Sometimes it gets left behind, get rid of it
-        t_webcam_image = self.s['webcam_image']
-        
-        t_scanner_image = self.s['scanned_image']
+        try:
+            t_webcam_image = self.s['webcam_image']
+        except:
+            self.logger.exception("Exception while starting the robot")
+            pass
+        try:
+            t_scanner_image = self.s['scanned_image']
+        except:
+            self.logger.exception("Exception while starting the robot")
+            pass
         
         try: os.remove(t_webcam_image)
         except:
@@ -508,14 +515,14 @@ class GadoSystem():
             
             #Pick up a single artifact from the in pile
             self.robot.pickUpObject()
-            time.sleep()
+            time.sleep(5)
             
             self.logger.info("attempting to move object to scanner")
             completed = self._checkMessages() & completed
             
             #Using the scanner, capture an image of that artifact
             self.robot.scanObject()
-            time.sleep(5)
+            self.robot._vacuumOn(False)
             
             completed = self._checkMessages() & completed
             
