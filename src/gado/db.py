@@ -194,12 +194,12 @@ class DBInterface():
     def _set_incrementer(self, artifact_set):
         db = self.db
         m = db.artifacts.artifact_set.max()
-        row = db(db.artifacts.artifact_set == artifact_set).select(m)
+        row = db(db.artifacts.artifact_set == artifact_set).select(db.artifacts.id, db.artifacts.set_incrementer, orderby=~db.artifacts.id).first()
         if not row:
             return 1
-        if not row[0][m]:
-            return 1
-        return row[0][m] + 1
+        else:
+            print row['id']
+            return row['set_incrementer'] + 1
     
     def add_artifact(self, artifact_set):
         # these are close to valid
@@ -207,9 +207,11 @@ class DBInterface():
         #name = '%s%s' % (self._get_set_name(artifact_set), incr)
         name = ''
         inc = self._set_incrementer(artifact_set)
-        return (self.db.artifacts.insert(artifact_set = artifact_set,
+        idx = self.db.artifacts.insert(artifact_set = artifact_set,
                                         name = name,
-                                        set_incrementer=inc), inc)
+                                        set_incrementer=inc)
+        self.db.commit()
+        return (idx, inc)
     
     def add_image(self, artifact, path, front):
         db = self.db

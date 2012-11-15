@@ -54,9 +54,17 @@ class Webcam():
         del self.device
         self.device = None 
     
-    def savePicture(self, path, iterations=15):
+    def savePicture(self, path, iterations=20, keep_all=False):
+        if keep_all:
+            i = path.rfind('.')
+            img = '%s%%s%s' % (path[:i], path[i:])
         for i in range(iterations):
-            self.device.saveSnapshot(path)
+            if keep_all:
+                self.device.saveSnapshot(img % i)
+                if i == iterations - 1:
+                    self.device.saveSnapshot(path)
+            else:
+                self.device.saveSnapshot(path)
 
     def connected(self):
         return (self.device != None)

@@ -1,6 +1,7 @@
 import json, os, datetime, time, sys
 from subprocess import Popen, PIPE
 from gado.db import DBInterface
+from gado.Logger import Logger
 
 def fetch_from_queue(q, message=None, timeout=None):
     '''
@@ -188,10 +189,13 @@ def _image_paths(dbi, artifact_id, artifact_set, incrementer, image_path='',
     
     return (front_path, back_path)
 
-
 def check_for_barcode(image_path, code='project gado'):
+    loggerObj = Logger('check_for_barcode')
+    logger = loggerObj.getLoggerInstance()
+    
     args = ['lib\zbar\zbarimg.exe', '-q', image_path]
     cmd = ' '.join(args)
+    logger.debug('checking for barcode "%s" with cmd: "%s"' % (code, cmd))
     print "CMD: %s" % (cmd)
     #Test code to make this runnable with py2exe
     if hasattr(sys.stderr, 'fileno'):
@@ -205,6 +209,7 @@ def check_for_barcode(image_path, code='project gado'):
     proc = Popen(cmd, stdout=PIPE, stderr=procStdErr, shell=True)
     output, errors = proc.communicate()
     output = str(output)
+    logger.debug('output: "%s"' % output)
     print 'functions\tcheck_for_barcode received: %s' % output
     print "barcode was %sfound" % ('' if output.find(code) >= 0 else 'not ')
     return (len(output) > 0) and (output.find(code) >= 0)

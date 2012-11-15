@@ -508,20 +508,21 @@ class GadoSystem():
             
             #Pick up a single artifact from the in pile
             self.robot.pickUpObject()
+            time.sleep()
             
             self.logger.info("attempting to move object to scanner")
             completed = self._checkMessages() & completed
             
             #Using the scanner, capture an image of that artifact
             self.robot.scanObject()
+            time.sleep(5)
             
             completed = self._checkMessages() & completed
             
             # Sometimes it gets left behind :(
             try: os.remove(t_scanner_image)
             except:
-                self.logger.exception("Couldn't remove image file")
-                pass
+                self.logger.exception("Couldn't remove image file - this is usually not a problem")
             
             #Do the actual scanning of the artifact
             self.scanner.scanImage(t_scanner_image)
