@@ -9,3 +9,9 @@ Requirements:
 * PySane
 * PySerial
 
+Changelog:
+
+-Version 0.2:
+* Small utitilities to test the Gado robot
+-Version 0.1:
+* Refactor, tidy up and make a robust interface to interact with the webcam and the scanner
