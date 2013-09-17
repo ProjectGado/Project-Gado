@@ -1,0 +1,11 @@
+Project Gado for Linux
+======================
+
+Requirements:
+
+* Python 2.7
+* PyGame 1.9.1
+* PIL (Python Imaging Library)
+* PySane
+* PySerial
+
