@@ -9,6 +9,12 @@ Requirements:
 * PySane
 * PySerial
 
+
+Instructions:
+You can run gadoMain.py to have a test run where the robot picks up from the stack, scans the artifact and puts it in the discard pile. Please check the different values for the robot arm.
+
+You can use testRobot.py to easily know which values are good for your set-up or test the different parts of Gado.
+
 Changelog:
 
 -Version 0.2:
