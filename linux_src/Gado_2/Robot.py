@@ -20,10 +20,6 @@ class Robot(object):
     conf = None
     props = None
 
-    """ My configuration """
-
-
-
     def __init__(self, com_port):
         '''
         Constructor

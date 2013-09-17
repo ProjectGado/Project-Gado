@@ -4,7 +4,7 @@ Basic loop for scanning artifacts.
 Please adjust the different values for the arm
  
 '''
-import ScannerControl.ScannerFunctionsTest as SF
+import ScannerControl.ScannerFunctions as SF
 import CameraControl.CameraFunctions as CF
 import ComputerVision.BarcodeDetection as B
 
