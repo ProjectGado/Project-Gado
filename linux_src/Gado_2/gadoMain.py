@@ -10,13 +10,19 @@ import ComputerVision.BarcodeDetection as B
 
 import Robot
 import time
+import serial
 
 import os
 import sane
 
 #Setting up the robot
-gado = Robot.Robot('/dev/ttyACM0')
-
+try:
+    gado = Robot.Robot('/dev/ttyACM0')
+except serial.serialutil.SerialException:
+    print 'Robot not connected at /dev/ttyACM0'
+    print 'Please check that is connected properly'
+    exit()
+    
 time.sleep(5)
 gado.connect()
 
