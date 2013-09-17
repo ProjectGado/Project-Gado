@@ -1,7 +1,7 @@
 '''
 Small utility to test the different robot parts
 
-Aalto University 2013
+@author: Agusti Pellicer (Aalto University)
 '''
 
 import Robot as Robot
