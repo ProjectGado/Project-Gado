@@ -9,9 +9,9 @@ Requirements:
 * PySane
 * PySerial
 
-
+For using the software you need to have a working scanner under Linux that uses SANE and installed the correct drivers of your webcam. If you want to check if they work, please run the different Python scripts in the folders CameraControl and ScannerControl under the Gado_2 folder.
 Instructions:
-You can run gadoMain.py to have a test run where the robot picks up from the stack, scans the artifact and puts it in the discard pile. Please check the different values for the robot arm.
+You can run gadoMain.py to have a test run where the robot picks up from the stack the artifact, scans it and puts it in the discard pile. Please check the different values for the position of the robot arm.
 
 You can use testRobot.py to easily know which values are good for your set-up or test the different parts of Gado.
 
