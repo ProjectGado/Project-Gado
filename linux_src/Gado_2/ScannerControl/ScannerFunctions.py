@@ -27,7 +27,7 @@ class Scanner:
 
         #there's other options to change 
         self.scanner.mode = mode
-        self.scanner.depth = 8
+        self.scanner.depth = depth
 
     def scanImage(self):
         """ Scan the image (returns a PIL object) """
