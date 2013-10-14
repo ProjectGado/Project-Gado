@@ -65,6 +65,7 @@ if __name__ == '__main__':
                 scannerObject.printInfoScanner()
             if int(option) == 3:
                 scannerObject.closeScanner()
+                exit()
             if int(option) == 1:
                 img  = scannerObject.scanImage()
                 img.save('test.tiff')
