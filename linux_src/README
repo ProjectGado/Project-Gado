@@ -3,11 +3,14 @@ Project Gado for Linux
 
 Requirements:
 
+* Arduino packages
 * Python 2.7
 * PyGame 1.9.1
 * PIL (Python Imaging Library)
 * PySane
 * PySerial
+
+Add the directory where is located Gado_2 to your PYTHONPATH.
 
 For using the software you need to have a working scanner under Linux that uses SANE and installed the correct drivers of your webcam. If you want to check if they work, please run the different Python scripts in the folders CameraControl and ScannerControl under the Gado_2 folder.
 Instructions:
