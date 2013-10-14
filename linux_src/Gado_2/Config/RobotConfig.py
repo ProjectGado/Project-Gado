@@ -15,8 +15,7 @@ class RobotConfig(object):
         '''
         Constructor
         '''
-        #file = open('./Config/robot_config.txt')
-        file = open('../Gado_2/Config/robot_config.txt')
+        file = open('./Config/robot_config.txt')
         file_contents = file.read()
         file_contents = re.sub('\s', '', file_contents)
         file_contents = str(file_contents)
